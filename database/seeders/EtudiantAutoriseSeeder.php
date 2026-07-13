@@ -19,6 +19,7 @@ class EtudiantAutoriseSeeder extends Seeder
                 'nom' => 'Hountondji',
                 'prenom' => 'Philippe',
                 'promo' => '2024',
+                'niveau' => 'M2',
             ],
             [
                 'matricule' => 'IFRI2024002',
@@ -26,6 +27,7 @@ class EtudiantAutoriseSeeder extends Seeder
                 'nom' => 'Dossou',
                 'prenom' => 'Marie',
                 'promo' => '2024',
+                'niveau' => 'L3',
             ],
             [
                 'matricule' => 'IFRI2023015',
@@ -33,14 +35,17 @@ class EtudiantAutoriseSeeder extends Seeder
                 'nom' => 'Agossou',
                 'prenom' => 'Jean',
                 'promo' => '2023',
+                'niveau' => 'L2',
             ],
             [
-                'matricule' => 'IFRI2024001',
-                'email' => 'hountondjiphilippe58@gmail.com',
-                'nom' => 'Hountondji',
-                'prenom' => 'Philippe',
-                'promo' => '2024',
-            ],
+            'matricule' => 'IFRI2024001',
+            'email' => 'hountondjiphilippe58@gmail.com',
+            'nom' => 'Hountondji',
+            'prenom' => 'Philippe',
+            'filiere_id' => 1,
+            'promo' => '2024',
+            'niveau' => 'L3',
+        ],
         ];
 
         foreach ($etudiantsTest as $etudiant) {
