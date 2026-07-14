@@ -1,1 +1,29 @@
+<<<<<<< HEAD
 @import "tailwindcss";
+=======
+@import "tailwindcss";
+
+@theme {
+  /* Design system MÉMOIRES+ (cahier des charges, section maquette) */
+  --color-primary: #13246B;      /* bleu marine profond - headers, boutons principaux */
+  --color-primary-light: #1E3AA0; /* bleu vif - dégradés, éléments actifs */
+  --color-accent: #F5B800;        /* jaune/or - liens rapides, accroche */
+  --color-bg: #F7F8FA;            /* fond général */
+  --color-text: #1F2937;          /* gris anthracite */
+
+  /* Statuts */
+  --color-status-attente: #F97316;  /* orange - en attente */
+  --color-status-valide: #16A34A;   /* vert - validé */
+  --color-status-rejete: #DC2626;   /* rouge - rejeté */
+
+  --font-sans: "Inter", "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 14px;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+>>>>>>> main

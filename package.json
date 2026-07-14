@@ -6,18 +6,27 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+<<<<<<< HEAD
     "lint": "eslint .",
+=======
+    "lint": "oxlint",
+>>>>>>> main
     "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
     "axios": "^1.18.1",
+<<<<<<< HEAD
+=======
+    "lucide-react": "^1.24.0",
+>>>>>>> main
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",
     "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
@@ -26,6 +35,12 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+=======
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.71.0",
+>>>>>>> main
     "vite": "^8.1.1"
   }
 }
