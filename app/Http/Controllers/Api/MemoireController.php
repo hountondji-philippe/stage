@@ -47,7 +47,7 @@ class MemoireController extends Controller
         $memoire->increment('views_count');
 
         return response()->json([
-            'memoire' => $memoire->load(['filiere', 'user']),
+            'memoire' => $memoire->load(['filiere', 'user.etudiantAutorise']),
         ]);
     }
 

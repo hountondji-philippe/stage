@@ -15,11 +15,11 @@ class EtudiantAutoriseSeeder extends Seeder
         $etudiantsTest = [
             [
                 'matricule' => 'IFRI2024001',
-                'email' => 'etudiant1.test@ifri-uac.bj',
+                'email' => 'hountondjiphilippe58@gmail.com',
                 'nom' => 'Hountondji',
                 'prenom' => 'Philippe',
                 'promo' => '2024',
-                'niveau' => 'M2',
+                'niveau' => 'L3',
             ],
             [
                 'matricule' => 'IFRI2024002',
@@ -37,15 +37,6 @@ class EtudiantAutoriseSeeder extends Seeder
                 'promo' => '2023',
                 'niveau' => 'L2',
             ],
-            [
-            'matricule' => 'IFRI2024001',
-            'email' => 'hountondjiphilippe58@gmail.com',
-            'nom' => 'Hountondji',
-            'prenom' => 'Philippe',
-            'filiere_id' => 1,
-            'promo' => '2024',
-            'niveau' => 'L3',
-        ],
         ];
 
         foreach ($etudiantsTest as $etudiant) {
@@ -57,6 +48,7 @@ class EtudiantAutoriseSeeder extends Seeder
                     'prenom' => $etudiant['prenom'],
                     'filiere_id' => $filiereInfoGestion->id,
                     'promo' => $etudiant['promo'],
+                    'niveau' => $etudiant['niveau'],
                     'compte_active' => false,
                 ]
             );
