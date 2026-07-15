@@ -216,4 +216,35 @@ class AuthController extends Controller
             'user' => $request->user()->load('etudiantAutorise'),
         ]);
     }
+
+        public function changerMotDePasse(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'mot_de_passe_actuel' => 'required|string',
+            'mot_de_passe' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Données invalides.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        if (!Hash::check($request->mot_de_passe_actuel, $user->password)) {
+            return response()->json([
+                'message' => 'Le mot de passe actuel est incorrect.',
+            ], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->mot_de_passe),
+        ]);
+
+        return response()->json([
+            'message' => 'Mot de passe mis à jour avec succès.',
+        ]);
+    }
 }

@@ -167,6 +167,27 @@ class MemoireController extends Controller
             'memoire' => $memoire,
         ]);
     }
+      
+
+        public function destroy(Request $request, Memoire $memoire)
+    {
+        if ($memoire->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Action non autorisée.'], 403);
+        }
+
+        if (!$memoire->estEnAttente()) {
+            return response()->json([
+                'message' => 'Seul un mémoire en attente peut être supprimé.',
+            ], 409);
+        }
+
+        Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
+        $memoire->delete();
+
+        return response()->json([
+            'message' => 'Mémoire supprimé avec succès.',
+        ]);
+    }
 
     public function enAttenteAdmin()
     {
@@ -262,6 +283,29 @@ class MemoireController extends Controller
         'valide' => $valide,
         'rejete' => $rejete,
         'par_filiere' => $parFiliere,
+    ]);
+}
+
+public function tousAdmin(Request $request)
+{
+    $query = Memoire::with(['filiere', 'user.etudiantAutorise']);
+
+    if ($request->filled('statut')) {
+        $query->where('statut', $request->statut);
+    }
+
+    $memoires = $query->latest()->paginate(15);
+
+    return response()->json($memoires);
+}
+
+public function supprimerAdmin(Memoire $memoire)
+{
+    Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
+    $memoire->delete();
+
+    return response()->json([
+        'message' => 'Mémoire supprimé définitivement.',
     ]);
 }
 }

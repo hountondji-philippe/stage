@@ -21,16 +21,20 @@ Route::get('/filieres', [FiliereController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::put('/auth/mot-de-passe', [AuthController::class, 'changerMotDePasse']);
 
     Route::get('/memoires/mes-memoires', [MemoireController::class, 'mesMemoires']);
     Route::post('/memoires', [MemoireController::class, 'store']);
     Route::put('/memoires/{memoire}', [MemoireController::class, 'update']);
+    Route::delete('/memoires/{memoire}', [MemoireController::class, 'destroy']);
 
-        Route::middleware('admin')->group(function () {
+    Route::middleware('admin')->group(function () {
         Route::get('/admin/memoires/en-attente', [MemoireController::class, 'enAttenteAdmin']);
+        Route::get('/admin/memoires', [MemoireController::class, 'tousAdmin']);
         Route::get('/admin/memoires/{memoire}/fichier/{type}', [MemoireController::class, 'fichierAdmin']);
         Route::post('/admin/memoires/{memoire}/valider', [MemoireController::class, 'valider']);
         Route::post('/admin/memoires/{memoire}/rejeter', [MemoireController::class, 'rejeter']);
+        Route::delete('/admin/memoires/{memoire}', [MemoireController::class, 'supprimerAdmin']);
 
         Route::apiResource('/admin/etudiants-autorises', EtudiantAutoriseController::class)
             ->parameters(['etudiants-autorises' => 'etudiantAutorise']);
