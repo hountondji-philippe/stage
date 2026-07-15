@@ -63,7 +63,7 @@
                     <tr>
                         <td style="background-color:#f9fafb; padding:18px 32px; text-align:center; border-top:1px solid #e5e7eb;">
                             <p style="margin:0; color:#9ca3af; font-size:12px;">
-                                &copy; {{ date('Y') }} Mémoires+ — IFRI / ENEAM
+                                &copy; {{ date('Y') }} Mémoires+ — ENEAM
                             </p>
                         </td>
                     </tr>
