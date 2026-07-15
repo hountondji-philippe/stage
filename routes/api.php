@@ -11,6 +11,7 @@ Route::post('/auth/activer-compte', [AuthController::class, 'activerCompte']);
 Route::post('/auth/renvoyer-lien', [AuthController::class, 'renvoyerLien']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
+Route::get('/admin/stats', [MemoireController::class, 'stats']);
 Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
 Route::get('/memoires/publics/{memoire}', [MemoireController::class, 'afficherPublic']);
 Route::get('/memoires/{memoire}/fichier', [MemoireController::class, 'fichierPublic']);

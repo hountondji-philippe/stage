@@ -17,6 +17,7 @@ class EtudiantAutorise extends Model
         'prenom',
         'filiere_id',
         'promo',
+        'niveau',
         'compte_active',
         'token_activation',
         'token_expires_at',

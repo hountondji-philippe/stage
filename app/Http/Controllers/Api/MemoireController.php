@@ -237,4 +237,31 @@ class MemoireController extends Controller
             'memoire' => $memoire,
         ]);
     }
+
+    public function stats()
+{
+    $total = Memoire::count();
+    $enAttente = Memoire::where('statut', 'en_attente')->count();
+    $valide = Memoire::where('statut', 'valide')->count();
+    $rejete = Memoire::where('statut', 'rejete')->count();
+
+    $parFiliere = Memoire::selectRaw('filiere_id, count(*) as total')
+        ->groupBy('filiere_id')
+        ->with('filiere:id,nom')
+        ->orderByDesc('total')
+        ->limit(6)
+        ->get()
+        ->map(fn ($item) => [
+            'nom' => $item->filiere->nom ?? 'Non définie',
+            'total' => $item->total,
+        ]);
+
+    return response()->json([
+        'total' => $total,
+        'en_attente' => $enAttente,
+        'valide' => $valide,
+        'rejete' => $rejete,
+        'par_filiere' => $parFiliere,
+    ]);
+}
 }
