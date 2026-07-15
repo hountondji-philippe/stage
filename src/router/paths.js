@@ -1,14 +1,20 @@
-// Chemins alignés sur AppRouter.jsx (et le plan de navigation du cahier des charges).
 export const ROUTES = {
   accueil: "/",
-  recherche: "/archive", // Écran 2 — "Archive de mémoires"
-  memoirePublic: (id) => `/memoires/${id}`, // Écran 3
+  recherche: "/archive",
+  memoirePublic: (id) => `/memoires/${id}`,
 
-  inscription: "/inscription", // Écran 4 (visiteur → dépôt = doit d'abord s'inscrire)
-  connexionEtudiant: "/connexion-etudiant", // Écran 6
+  inscription: "/inscription",
+  activation: "/activation",
+  motDePasseOublie: "/mot-de-passe-oublie",
+  connexionEtudiant: "/connexion-etudiant",
+  connexionAdmin: "/connexion-admin",
 
-  espaceEtudiant: "/etudiant/tableau-de-bord", // Écran 7
-  depotEtudiant: "/etudiant/deposer", // Écran 8
+  espaceEtudiant: "/etudiant/tableau-de-bord",
+  depotEtudiant: "/etudiant/deposer",
+  depotEtudiantModifier: (id) => `/etudiant/deposer/${id}`,
+  memoireDetailEtudiant: (id) => `/etudiant/memoires/${id}`,
+  profilEtudiant: "/etudiant/profil",
 
-  espaceAdmin: "/admin/tableau-de-bord", // Écran 10
+  espaceAdmin: "/admin/tableau-de-bord",
+  etudiantsAutorisesAdmin: "/admin/etudiants-autorises",
 };
