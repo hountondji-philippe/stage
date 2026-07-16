@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { useLoginEtudiant } from "../hooks/useLoginEtudiant";
+import { ROUTES } from "../../../router/paths";
 
 export default function ConnexionEtudiantForm() {
   const { form, updateField, errors, serverError, loading, submit } = useLoginEtudiant();
@@ -75,7 +76,7 @@ export default function ConnexionEtudiantForm() {
             Se souvenir de moi
           </label>
           <Link
-            to="/mot-de-passe-oublie"
+            to={ROUTES.motDePasseOublie}
             className="text-sm font-semibold text-[var(--color-accent)] hover:brightness-90 sm:text-right"
           >
             Mot de passe oublié ?
@@ -95,7 +96,7 @@ export default function ConnexionEtudiantForm() {
           <div className="h-px flex-1 bg-gray-200" />
         </div>
         <Link
-          to="/archive"
+          to={ROUTES.recherche}
           className="flex items-center justify-center gap-2 text-sm text-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
         >
           <Globe className="h-4 w-4" />
@@ -103,10 +104,10 @@ export default function ConnexionEtudiantForm() {
         </Link>
       </div>
 
-      {/* Lien inscription — visible seulement mobile (déjà dans le panneau visuel en desktop) */}
-      <p className="text-center text-sm text-gray-500 md:hidden">
+      {/* Lien inscription — visible partout (mobile ET desktop) */}
+      <p className="text-center text-sm text-gray-500">
         Pas encore de compte ?{" "}
-        <Link to="/inscription" className="font-semibold text-[var(--color-primary)]">
+        <Link to={ROUTES.inscription} className="font-semibold text-[var(--color-primary)]">
           Inscrivez-vous avec votre matricule
         </Link>
       </p>

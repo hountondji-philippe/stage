@@ -14,6 +14,7 @@ export default function DeleteConfirmModal({
   target,
   count = 0,
   loading = false,
+  error = "",
 }) {
   const isBulk = !target && count > 0;
 
@@ -31,6 +32,11 @@ export default function DeleteConfirmModal({
           <h3 className="font-bold text-gray-900">Confirmer la suppression</h3>
           <p className="mt-2 text-sm text-gray-600">{description}</p>
         </div>
+        {error && (
+          <div className="rounded-lg bg-red-50 p-3 text-left text-sm text-red-700">
+            {error}
+          </div>
+        )}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">

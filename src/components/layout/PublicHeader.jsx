@@ -4,7 +4,7 @@ import { Menu, X } from "lucide-react";
 import Button from "../ui/Button";
 import { ROUTES } from "../../router/paths";
 import { useAuth } from "../../features/auth/context/AuthContext"; // Import du contexte
-import logo from "../../assets/logo.jpeg"; // Import de ton logo
+import logo from "../../assets/logo.png"; // Import de ton logo
 
 export default function PublicHeader() {
   const navigate = useNavigate();

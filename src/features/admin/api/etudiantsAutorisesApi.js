@@ -22,24 +22,31 @@ export async function getEtudiants({ recherche = "", filiereId = "", promo = "" 
 /**
  * Ajout d'un étudiant autorisé.
  * POST /api/admin/etudiants-autorises
+ * Réponse : { message, etudiant: {...} }  (status 201)
  */
 export async function createEtudiant(payload) {
   const { data } = await apiClient.post(BASE_URL, payload);
-  return data;
+  return data.etudiant;
 }
 
 /**
  * Modification d'un étudiant autorisé.
  * PUT /api/admin/etudiants-autorises/{id}
+ * Réponse : { message, etudiant: {...} }
  */
 export async function updateEtudiant(id, payload) {
   const { data } = await apiClient.put(`${BASE_URL}/${id}`, payload);
-  return data;
+  return data.etudiant;
 }
 
 /**
  * Suppression d'un seul étudiant.
  * DELETE /api/admin/etudiants-autorises/{id}
+ *
+ * ⚠️ Le backend refuse avec un 409 si l'étudiant a déjà un compte actif
+ * (message: "Impossible de supprimer un étudiant ayant déjà un compte actif.").
+ * On laisse l'erreur remonter telle quelle (axios throw) pour que l'appelant
+ * affiche err.response.data.message.
  */
 export async function deleteEtudiant(id) {
   const { data } = await apiClient.delete(`${BASE_URL}/${id}`);
@@ -48,11 +55,32 @@ export async function deleteEtudiant(id) {
 
 /**
  * Suppression groupée (sélection multiple).
- * Pas de route bulk-delete côté backend pour l'instant : on enchaîne
- * simplement plusieurs DELETE /api/admin/etudiants-autorises/{id}.
+ * Pas de route bulk-delete côté backend : on enchaîne plusieurs
+ * DELETE /api/admin/etudiants-autorises/{id}, sans laisser un seul échec
+ * (ex: compte actif → 409) bloquer les autres suppressions.
+ *
+ * Retourne { succeeded: [ids...], failed: [{ id, message }...] } pour que
+ * l'UI puisse dire "3 supprimés, 1 non supprimé (compte actif)".
  */
 export async function deleteEtudiants(ids) {
-  await Promise.all(ids.map((id) => deleteEtudiant(id)));
+  const results = await Promise.allSettled(ids.map((id) => deleteEtudiant(id)));
+
+  const succeeded = [];
+  const failed = [];
+
+  results.forEach((result, index) => {
+    const id = ids[index];
+    if (result.status === "fulfilled") {
+      succeeded.push(id);
+    } else {
+      failed.push({
+        id,
+        message: result.reason?.response?.data?.message ?? "Erreur inconnue.",
+      });
+    }
+  });
+
+  return { succeeded, failed };
 }
 
 /**

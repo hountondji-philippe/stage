@@ -13,8 +13,7 @@ export function useFilieres() {
     (async () => {
       try {
         const data = await getFilieres();
-        // Gère les deux formats possibles : [...] direct ou { data: [...] }
-        setFilieres(data.data ?? data);
+        setFilieres(data ?? []);
       } catch (err) {
         setFilieres([]);
       } finally {

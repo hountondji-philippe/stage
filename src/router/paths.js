@@ -6,6 +6,7 @@ export const ROUTES = {
   inscription: "/inscription",
   activation: "/activation",
   motDePasseOublie: "/mot-de-passe-oublie",
+  reinitialiserMotDePasse: "/reinitialiser-mot-de-passe",
   connexionEtudiant: "/connexion-etudiant",
   connexionAdmin: "/connexion-admin",
 

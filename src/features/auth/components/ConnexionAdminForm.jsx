@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { useLoginAdmin } from "../hooks/useLoginAdmin";
+import { ROUTES } from "../../../router/paths";
 
 export default function ConnexionAdminForm() {
   const { form, updateField, errors, serverError, loading, submit } = useLoginAdmin();
@@ -79,7 +80,7 @@ export default function ConnexionAdminForm() {
             Se souvenir de moi
           </label>
           <Link
-            to="/mot-de-passe-oublie"
+            to={ROUTES.motDePasseOublie}
             className="text-sm font-semibold text-[var(--color-accent)] hover:brightness-90 sm:text-right"
           >
             Mot de passe oublié ?
@@ -99,7 +100,7 @@ export default function ConnexionAdminForm() {
           <div className="h-px flex-1 bg-gray-200" />
         </div>
         <Link
-          to="/archive"
+          to={ROUTES.recherche}
           className="flex items-center justify-center gap-2 text-sm text-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
         >
           <Globe className="h-4 w-4" />
@@ -109,7 +110,7 @@ export default function ConnexionAdminForm() {
 
       <p className="text-center text-sm text-gray-500">
         Vous êtes étudiant ?{" "}
-        <Link to="/connexion-etudiant" className="font-semibold text-[var(--color-primary)]">
+        <Link to={ROUTES.connexionEtudiant} className="font-semibold text-[var(--color-primary)]">
           Connectez-vous ici
         </Link>
       </p>

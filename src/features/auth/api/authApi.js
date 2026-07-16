@@ -36,13 +36,23 @@ export async function activerCompte(token) {
 }
 
 export async function renvoyerLien(email) {
-  const { data } = await apiClient.post("/auth/renvoyer-lien", { email });
+  const { data } = await apiClient.post("/auth/mot-de-passe-oublie", { email });
   return data;
 }
 
 export async function changerMotDePasse({ mot_de_passe_actuel, mot_de_passe, mot_de_passe_confirmation }) {
   const { data } = await apiClient.post("/auth/changer-mot-de-passe", {
     mot_de_passe_actuel,
+    mot_de_passe,
+    mot_de_passe_confirmation,
+  });
+  return data;
+}
+
+export async function reinitialiserMotDePasse({ token, email, mot_de_passe, mot_de_passe_confirmation }) {
+  const { data } = await apiClient.post("/auth/reinitialiser-mot-de-passe", {
+    token,
+    email,
     mot_de_passe,
     mot_de_passe_confirmation,
   });
@@ -58,4 +68,5 @@ export const authApi = {
   activerCompte,
   renvoyerLien,
   changerMotDePasse,
+  reinitialiserMotDePasse,
 };

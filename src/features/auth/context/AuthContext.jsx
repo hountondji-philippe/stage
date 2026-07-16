@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useCallback } from "react";
+import { createContext, useState, useContext, useEffect, useCallback } from "react";
 import { getMe, logout as logoutRequest } from "../api/authApi";
 import { ROUTES } from "../../../router/paths";
 

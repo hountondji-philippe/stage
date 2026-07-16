@@ -74,7 +74,18 @@ export function useEtudiantForm({ etudiant, onSuccess }) {
       onSuccess?.();
     } catch (err) {
       if (err.response?.status === 422) {
-        setErrors(err.response.data.errors ?? {});
+        // Laravel renvoie { errors: { matricule: ["message"], ... } } —
+        // un TABLEAU par champ. On ne garde que le premier message.
+        const backendErrors = err.response.data.errors ?? {};
+        const flatErrors = Object.fromEntries(
+          Object.entries(backendErrors).map(([field, messages]) => [
+            field,
+            Array.isArray(messages) ? messages[0] : messages,
+          ])
+        );
+        setErrors(flatErrors);
+      } else if (err.response?.data?.message) {
+        setServerError(err.response.data.message);
       } else {
         setServerError("Une erreur est survenue. Merci de réessayer.");
       }

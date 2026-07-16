@@ -51,15 +51,18 @@ export function useEtudiantsAutorises() {
   }
 
   async function removeOne(id) {
+    // Peut throw (ex: 409 "compte actif") — laissé volontairement à l'appelant,
+    // pour qu'il affiche err.response.data.message sans refermer la modale.
     await deleteEtudiant(id);
     setSelectedIds((prev) => prev.filter((x) => x !== id));
     await fetchEtudiants();
   }
 
   async function removeSelected() {
-    await deleteEtudiants(selectedIds);
-    clearSelection();
+    const { succeeded, failed } = await deleteEtudiants(selectedIds);
+    setSelectedIds((prev) => prev.filter((id) => !succeeded.includes(id)));
     await fetchEtudiants();
+    return { succeeded, failed };
   }
 
   const allSelected = useMemo(

@@ -33,6 +33,7 @@ export default function EtudiantsAutorisesPage() {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // étudiant | "bulk" | null
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   function openAddModal() {
     setFormModal({ open: true, etudiant: null });
@@ -42,15 +43,38 @@ export default function EtudiantsAutorisesPage() {
     setFormModal({ open: true, etudiant });
   }
 
+  function openDeleteModal(target) {
+    setDeleteError("");
+    setDeleteTarget(target);
+  }
+
+  function closeDeleteModal() {
+    setDeleteTarget(null);
+    setDeleteError("");
+  }
+
   async function handleConfirmDelete() {
     setDeleteLoading(true);
+    setDeleteError("");
     try {
       if (deleteTarget === "bulk") {
-        await removeSelected();
+        const { failed } = await removeSelected();
+        if (failed.length > 0) {
+          // Ex: certains étudiants sélectionnés ont un compte actif (409)
+          setDeleteError(
+            `${failed.length} étudiant(s) n'ont pas pu être supprimés (compte déjà actif). Les autres ont bien été retirés.`
+          );
+          return; // on laisse la modale ouverte pour que l'admin voie le message
+        }
+        closeDeleteModal();
       } else if (deleteTarget) {
         await removeOne(deleteTarget.id);
+        closeDeleteModal();
       }
-      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(
+        err.response?.data?.message ?? "Une erreur est survenue. Merci de réessayer."
+      );
     } finally {
       setDeleteLoading(false);
     }
@@ -79,7 +103,7 @@ export default function EtudiantsAutorisesPage() {
 
         <BulkActionsBar
           count={selectedIds.length}
-          onDeleteClick={() => setDeleteTarget("bulk")}
+          onDeleteClick={() => openDeleteModal("bulk")}
         />
 
         {error && (
@@ -99,12 +123,12 @@ export default function EtudiantsAutorisesPage() {
               onToggleSelected={toggleSelected}
               onToggleSelectAll={toggleSelectAll}
               onEdit={openEditModal}
-              onDeleteOne={(etudiant) => setDeleteTarget(etudiant)}
+              onDeleteOne={openDeleteModal}
             />
             <EtudiantsCardList
               etudiants={etudiants}
               onEdit={openEditModal}
-              onDeleteOne={(etudiant) => setDeleteTarget(etudiant)}
+              onDeleteOne={openDeleteModal}
             />
           </>
         )}
@@ -140,7 +164,8 @@ export default function EtudiantsAutorisesPage() {
         target={deleteTarget === "bulk" ? null : deleteTarget}
         count={deleteTarget === "bulk" ? selectedIds.length : 0}
         loading={deleteLoading}
-        onClose={() => setDeleteTarget(null)}
+        error={deleteError}
+        onClose={closeDeleteModal}
         onConfirm={handleConfirmDelete}
       />
     </AdminLayout>
