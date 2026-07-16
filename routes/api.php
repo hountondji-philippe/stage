@@ -13,6 +13,7 @@ Route::post('/auth/renvoyer-lien', [AuthController::class, 'renvoyerLien']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/mot-de-passe-oublie', [AuthController::class, 'demanderReinitialisation']);
 Route::post('/auth/reinitialiser-mot-de-passe', [AuthController::class, 'reinitialiserMotDePasse']);
+Route::post('/admin/etudiants-autorises/importer', [EtudiantAutoriseController::class, 'importer']);
 
 Route::get('/admin/stats', [MemoireController::class, 'stats']);
 Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);

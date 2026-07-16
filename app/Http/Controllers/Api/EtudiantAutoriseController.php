@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\EtudiantAutorise;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Imports\EtudiantsAutorisesImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class EtudiantAutoriseController extends Controller
 {
@@ -44,7 +46,7 @@ class EtudiantAutoriseController extends Controller
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
             'filiere_id' => 'required|exists:filieres,id',
-            'promo' => 'required|string|max:9',
+            'annee_scolaire' => 'required|string|max:9',
             'niveau' => 'required|in:L1,L2,L3,M1,M2',
         ]);
 
@@ -70,33 +72,55 @@ class EtudiantAutoriseController extends Controller
         ]);
     }
 
-    public function update(Request $request, EtudiantAutorise $etudiantAutorise)
-    {
-        $validator = Validator::make($request->all(), [
-            'matricule' => 'sometimes|string|unique:etudiants_autorises,matricule,' . $etudiantAutorise->id,
-            'email' => 'sometimes|email|unique:etudiants_autorises,email,' . $etudiantAutorise->id,
-            'nom' => 'sometimes|string|max:255',
-            'prenom' => 'sometimes|string|max:255',
-            'filiere_id' => 'sometimes|exists:filieres,id',
-            'promo' => 'sometimes|string|max:9',
-            'niveau' => 'sometimes|in:L1,L2,L3,M1,M2',
-        ]);
+            public function update(Request $request, EtudiantAutorise $etudiantAutorise)
+            {
+                $validator = Validator::make($request->all(), [
+                    'matricule' => 'sometimes|string|unique:etudiants_autorises,matricule,' . $etudiantAutorise->id,
+                    'email' => 'sometimes|email|unique:etudiants_autorises,email,' . $etudiantAutorise->id,
+                    'nom' => 'sometimes|string|max:255',
+                    'prenom' => 'sometimes|string|max:255',
+                    'filiere_id' => 'sometimes|exists:filieres,id',
+                    'promo' => 'sometimes|string|max:9',
+                    'niveau' => 'sometimes|in:L1,L2,L3,M1,M2',
+                ]);
 
-        if ($validator->fails()) {
+                if ($validator->fails()) {
+                    return response()->json([
+                        'message' => 'Données invalides.',
+                        'errors' => $validator->errors(),
+                    ], 422);
+                }
+
+                $etudiantAutorise->update($validator->validated());
+
+                return response()->json([
+                    'message' => 'Étudiant mis à jour.',
+                    'etudiant' => $etudiantAutorise->load('filiere'),
+                ]);
+            }
+            public function importer(Request $request)
+        {
+            $validator = Validator::make($request->all(), [
+                'fichier' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Fichier invalide. Formats acceptes : xlsx, xls, csv.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $import = new EtudiantsAutorisesImport();
+            Excel::import($import, $request->file('fichier'));
+
             return response()->json([
-                'message' => 'Données invalides.',
-                'errors' => $validator->errors(),
-            ], 422);
+                'message' => count($import->crees) . ' etudiant(s) importe(s) avec succes.',
+                'crees' => count($import->crees),
+                'ignores' => $import->ignores,
+                'erreurs' => $import->erreurs,
+            ]);
         }
-
-        $etudiantAutorise->update($validator->validated());
-
-        return response()->json([
-            'message' => 'Étudiant mis à jour.',
-            'etudiant' => $etudiantAutorise->load('filiere'),
-        ]);
-    }
-
     public function destroy(EtudiantAutorise $etudiantAutorise)
     {
         if ($etudiantAutorise->compte_active) {

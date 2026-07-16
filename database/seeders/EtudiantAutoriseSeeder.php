@@ -18,7 +18,7 @@ class EtudiantAutoriseSeeder extends Seeder
                 'email' => 'hountondjiphilippe58@gmail.com',
                 'nom' => 'Hountondji',
                 'prenom' => 'Philippe',
-                'promo' => '2024',
+                'annee_scolaire' => '2024-2025',
                 'niveau' => 'L3',
             ],
             [
@@ -26,7 +26,7 @@ class EtudiantAutoriseSeeder extends Seeder
                 'email' => 'etudiant2.test@ifri-uac.bj',
                 'nom' => 'Dossou',
                 'prenom' => 'Marie',
-                'promo' => '2024',
+                'annee_scolaire' => '2024-2025',
                 'niveau' => 'L3',
             ],
             [
@@ -34,7 +34,7 @@ class EtudiantAutoriseSeeder extends Seeder
                 'email' => 'etudiant3.test@ifri-uac.bj',
                 'nom' => 'Agossou',
                 'prenom' => 'Jean',
-                'promo' => '2023',
+                'annee_scolaire' => '2023-2024',
                 'niveau' => 'L2',
             ],
         ];
@@ -47,7 +47,7 @@ class EtudiantAutoriseSeeder extends Seeder
                     'nom' => $etudiant['nom'],
                     'prenom' => $etudiant['prenom'],
                     'filiere_id' => $filiereInfoGestion->id,
-                    'promo' => $etudiant['promo'],
+                    'annee_scolaire' => $etudiant['annee_scolaire'],
                     'niveau' => $etudiant['niveau'],
                     'compte_active' => false,
                 ]
