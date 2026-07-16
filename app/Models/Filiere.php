@@ -18,4 +18,9 @@ class Filiere extends Model
     {
         return $this->hasMany(Memoire::class);
     }
+
+        public function sousFilieres(): HasMany
+    {
+        return $this->hasMany(SousFiliere::class);
+    }
 }

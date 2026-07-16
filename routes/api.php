@@ -5,11 +5,14 @@ use App\Http\Controllers\Api\MemoireController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\EtudiantAutoriseController;
 use App\Http\Controllers\Api\FiliereController;
+use App\Http\Controllers\Api\SousFiliereController;
 
 Route::post('/auth/verifier-matricule', [AuthController::class, 'verifierMatricule']);
 Route::post('/auth/activer-compte', [AuthController::class, 'activerCompte']);
 Route::post('/auth/renvoyer-lien', [AuthController::class, 'renvoyerLien']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/mot-de-passe-oublie', [AuthController::class, 'demanderReinitialisation']);
+Route::post('/auth/reinitialiser-mot-de-passe', [AuthController::class, 'reinitialiserMotDePasse']);
 
 Route::get('/admin/stats', [MemoireController::class, 'stats']);
 Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
@@ -17,6 +20,8 @@ Route::get('/memoires/publics/{memoire}', [MemoireController::class, 'afficherPu
 Route::get('/memoires/{memoire}/fichier', [MemoireController::class, 'fichierPublic']);
 Route::get('/memoires/{memoire}/telecharger', [MemoireController::class, 'telechargerPublic']);
 Route::get('/filieres', [FiliereController::class, 'index']);
+Route::get('/sous-filieres', [SousFiliereController::class, 'index']);
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -41,5 +46,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::apiResource('/admin/filieres', FiliereController::class)
             ->except(['index', 'show']);
+
+        Route::apiResource('/admin/sous-filieres', SousFiliereController::class)
+            ->except(['index', 'show']);
+
     });
 });

@@ -13,10 +13,14 @@ class MemoireController extends Controller
 {
     public function rechercherPublic(Request $request)
     {
-        $query = Memoire::valides()->with(['filiere', 'user']);
+        $query = Memoire::valides()->with(['filiere', 'sousFiliere', 'user']);
 
         if ($request->filled('filiere_id')) {
             $query->where('filiere_id', $request->filiere_id);
+        }
+
+        if ($request->filled('sous_filiere_id')) {
+            $query->where('sous_filiere_id', $request->sous_filiere_id);
         }
 
         if ($request->filled('annee')) {
@@ -47,7 +51,7 @@ class MemoireController extends Controller
         $memoire->increment('views_count');
 
         return response()->json([
-            'memoire' => $memoire->load(['filiere', 'user.etudiantAutorise']),
+            'memoire' => $memoire->load(['filiere', 'sousFiliere', 'user.etudiantAutorise']),
         ]);
     }
 
@@ -74,7 +78,7 @@ class MemoireController extends Controller
 
     public function mesMemoires(Request $request)
     {
-        $memoires = $request->user()->memoires()->with('filiere')->latest()->get();
+        $memoires = $request->user()->memoires()->with(['filiere', 'sousFiliere'])->latest()->get();
 
         return response()->json(['memoires' => $memoires]);
     }
@@ -85,6 +89,7 @@ class MemoireController extends Controller
             'titre' => 'required|string|max:255',
             'resume' => 'required|string',
             'filiere_id' => 'required|exists:filieres,id',
+            'sous_filiere_id' => 'nullable|exists:sous_filieres,id',
             'annee' => 'required|string|max:4',
             'encadrant' => 'required|string|max:255',
             'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
@@ -106,6 +111,7 @@ class MemoireController extends Controller
             'titre' => $request->titre,
             'resume' => $request->resume,
             'filiere_id' => $request->filiere_id,
+            'sous_filiere_id' => $request->sous_filiere_id,
             'annee' => $request->annee,
             'encadrant' => $request->encadrant,
             'fichier_memoire' => $cheminMemoire,
@@ -135,6 +141,7 @@ class MemoireController extends Controller
             'titre' => 'sometimes|string|max:255',
             'resume' => 'sometimes|string',
             'filiere_id' => 'sometimes|exists:filieres,id',
+            'sous_filiere_id' => 'sometimes|nullable|exists:sous_filieres,id',
             'annee' => 'sometimes|string|max:4',
             'encadrant' => 'sometimes|string|max:255',
             'fichier_memoire' => 'sometimes|file|mimes:pdf|max:10240',
@@ -148,7 +155,7 @@ class MemoireController extends Controller
             ], 422);
         }
 
-        $donnees = $request->only(['titre', 'resume', 'filiere_id', 'annee', 'encadrant']);
+        $donnees = $request->only(['titre', 'resume', 'filiere_id', 'sous_filiere_id', 'annee', 'encadrant']);
 
         if ($request->hasFile('fichier_memoire')) {
             Storage::disk('local')->delete($memoire->fichier_memoire);
@@ -167,9 +174,8 @@ class MemoireController extends Controller
             'memoire' => $memoire,
         ]);
     }
-      
 
-        public function destroy(Request $request, Memoire $memoire)
+    public function destroy(Request $request, Memoire $memoire)
     {
         if ($memoire->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Action non autorisée.'], 403);
@@ -191,7 +197,7 @@ class MemoireController extends Controller
 
     public function enAttenteAdmin()
     {
-        $memoires = Memoire::enAttente()->with(['filiere', 'user.etudiantAutorise'])->latest()->get();
+        $memoires = Memoire::enAttente()->with(['filiere', 'sousFiliere', 'user.etudiantAutorise'])->latest()->get();
 
         return response()->json(['memoires' => $memoires]);
     }
@@ -260,52 +266,52 @@ class MemoireController extends Controller
     }
 
     public function stats()
-{
-    $total = Memoire::count();
-    $enAttente = Memoire::where('statut', 'en_attente')->count();
-    $valide = Memoire::where('statut', 'valide')->count();
-    $rejete = Memoire::where('statut', 'rejete')->count();
+    {
+        $total = Memoire::count();
+        $enAttente = Memoire::where('statut', 'en_attente')->count();
+        $valide = Memoire::where('statut', 'valide')->count();
+        $rejete = Memoire::where('statut', 'rejete')->count();
 
-    $parFiliere = Memoire::selectRaw('filiere_id, count(*) as total')
-        ->groupBy('filiere_id')
-        ->with('filiere:id,nom')
-        ->orderByDesc('total')
-        ->limit(6)
-        ->get()
-        ->map(fn ($item) => [
-            'nom' => $item->filiere->nom ?? 'Non définie',
-            'total' => $item->total,
+        $parFiliere = Memoire::selectRaw('filiere_id, count(*) as total')
+            ->groupBy('filiere_id')
+            ->with('filiere:id,nom')
+            ->orderByDesc('total')
+            ->limit(6)
+            ->get()
+            ->map(fn ($item) => [
+                'nom' => $item->filiere->nom ?? 'Non définie',
+                'total' => $item->total,
+            ]);
+
+        return response()->json([
+            'total' => $total,
+            'en_attente' => $enAttente,
+            'valide' => $valide,
+            'rejete' => $rejete,
+            'par_filiere' => $parFiliere,
         ]);
-
-    return response()->json([
-        'total' => $total,
-        'en_attente' => $enAttente,
-        'valide' => $valide,
-        'rejete' => $rejete,
-        'par_filiere' => $parFiliere,
-    ]);
-}
-
-public function tousAdmin(Request $request)
-{
-    $query = Memoire::with(['filiere', 'user.etudiantAutorise']);
-
-    if ($request->filled('statut')) {
-        $query->where('statut', $request->statut);
     }
 
-    $memoires = $query->latest()->paginate(15);
+    public function tousAdmin(Request $request)
+    {
+        $query = Memoire::with(['filiere', 'sousFiliere', 'user.etudiantAutorise']);
 
-    return response()->json($memoires);
-}
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
 
-public function supprimerAdmin(Memoire $memoire)
-{
-    Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
-    $memoire->delete();
+        $memoires = $query->latest()->paginate(15);
 
-    return response()->json([
-        'message' => 'Mémoire supprimé définitivement.',
-    ]);
-}
+        return response()->json($memoires);
+    }
+
+    public function supprimerAdmin(Memoire $memoire)
+    {
+        Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
+        $memoire->delete();
+
+        return response()->json([
+            'message' => 'Mémoire supprimé définitivement.',
+        ]);
+    }
 }

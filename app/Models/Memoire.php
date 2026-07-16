@@ -12,6 +12,7 @@ class Memoire extends Model
         'titre',
         'resume',
         'filiere_id',
+        'sous_filiere_id',
         'annee',
         'encadrant',
         'fichier_memoire',
@@ -49,7 +50,12 @@ class Memoire extends Model
     {
         return $this->statut === 'valide';
     }
-
+     
+        public function sousFiliere(): BelongsTo
+    {
+        return $this->belongsTo(SousFiliere::class);
+    }
+    
     public function estEnAttente(): bool
     {
         return $this->statut === 'en_attente';

@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use App\Mail\ReinitialisationMotDePasseMail;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -247,4 +249,83 @@ class AuthController extends Controller
             'message' => 'Mot de passe mis à jour avec succès.',
         ]);
     }
+
+            public function demanderReinitialisation(Request $request)
+        {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Email invalide.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $user = User::where('email', $request->email)->first();
+
+            if ($user) {
+                $token = Str::random(64);
+
+                DB::table('password_reset_tokens')->updateOrInsert(
+                    ['email' => $request->email],
+                    ['token' => Hash::make($token), 'created_at' => now()]
+                );
+
+                Mail::to($request->email)->send(new ReinitialisationMotDePasseMail($token, $request->email));
+            }
+
+            return response()->json([
+                'message' => 'Si cet email existe, un lien de reinitialisation a ete envoye.',
+            ]);
+        }
+
+        public function reinitialiserMotDePasse(Request $request)
+        {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email',
+                'token' => 'required|string',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Donnees invalides.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $enregistrement = DB::table('password_reset_tokens')
+                ->where('email', $request->email)
+                ->first();
+
+            if (!$enregistrement || !Hash::check($request->token, $enregistrement->token)) {
+                return response()->json([
+                    'message' => 'Ce lien de reinitialisation est invalide.',
+                ], 404);
+            }
+
+            if (now()->diffInMinutes($enregistrement->created_at) > 60) {
+                return response()->json([
+                    'message' => 'Ce lien de reinitialisation a expire.',
+                ], 410);
+            }
+
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Utilisateur introuvable.',
+                ], 404);
+            }
+
+            $user->update(['password' => $request->password]);
+
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+            return response()->json([
+                'message' => 'Mot de passe reinitialise avec succes.',
+            ]);
+        }
 }
