@@ -1,7 +1,18 @@
 import { apiClient } from "../../../lib/apiClient";
 
-// GET /api/recherche/memoires?q=...&limit=...&sort=...
+/**
+ * Récupère les mémoires avec filtres optionnels
+ * params: { recherche, filiere_id, annee, ... }
+ */
 export async function searchMemoires(params = {}) {
   const { data } = await apiClient.get("/recherche/memoires", { params });
-  return data; // supposé : { data: [...], meta: {...} } ou tableau direct
+  return data; 
+}
+
+/**
+ * Récupère la liste des filières pour les menus déroulants
+ */
+export async function getFilieres() {
+  const { data } = await apiClient.get("/filieres");
+  return data;
 }

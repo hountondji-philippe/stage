@@ -17,27 +17,21 @@ export async function getMe() {
 
 export async function verifierMatricule(matricule) {
   const { data } = await apiClient.post("/auth/verifier-matricule", { matricule });
-  return data;
+  return data; // { message } — succès = HTTP 200
 }
 
-export async function creerCompte({ matricule, email, password, password_confirmation }) {
-  const { data } = await apiClient.post("/auth/creer-compte", {
-    matricule,
-    email,
+export async function activerCompte({ token, password, password_confirmation }) {
+  const { data } = await apiClient.post("/auth/activer-compte", {
+    token,
     password,
     password_confirmation,
   });
-  return data;
+  return data; // { message, token, user } — succès = HTTP 201
 }
 
-export async function activerCompte(token) {
-  const { data } = await apiClient.post("/auth/activer-compte", { token });
-  return data;
-}
-
-export async function renvoyerLien(email) {
-  const { data } = await apiClient.post("/auth/mot-de-passe-oublie", { email });
-  return data;
+export async function renvoyerLien(matricule) {
+  const { data } = await apiClient.post("/auth/renvoyer-lien", { matricule });
+  return data; // { message }
 }
 
 export async function changerMotDePasse({ mot_de_passe_actuel, mot_de_passe, mot_de_passe_confirmation }) {
@@ -64,7 +58,6 @@ export const authApi = {
   logout,
   getMe,
   verifierMatricule,
-  creerCompte,
   activerCompte,
   renvoyerLien,
   changerMotDePasse,

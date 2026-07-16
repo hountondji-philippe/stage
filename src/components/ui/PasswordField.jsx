@@ -1,37 +1,32 @@
-import { useState } from 'react';
-import { Eye, EyeOff, Lock } from 'lucide-react';
+// src/components/ui/PasswordField.jsx
+import { useState } from "react";
+import { Eye, EyeOff, Lock } from "lucide-react";
+import Input from "./TextField";
 
-export default function PasswordField({ label, id, error, className = '', ...props }) {
+export default function PasswordField({ label, name, value, onChange, error, required = false }) {
   const [visible, setVisible] = useState(false);
 
   return (
-    <div className={`space-y-1 ${className}`}>
-      {label && (
-        <label htmlFor={id} className="block text-sm font-semibold text-[#454651]">
-          {label}
-        </label>
-      )}
-      <div className="relative flex items-center">
-        <Lock className="absolute left-3 w-5 h-5 text-[#767682] pointer-events-none" />
-        <input
-          id={id}
-          type={visible ? 'text' : 'password'}
-          className={`w-full pl-10 pr-11 py-3 bg-[#eff4ff] border rounded-lg outline-none transition-all
-            focus:ring-2 focus:ring-[#3d56bb] focus:border-transparent
-            ${error ? 'border-[#ba1a1a]' : 'border-[#c6c5d2]'}`}
-          {...props}
-        />
+    <Input
+      label={label}
+      name={name}
+      type={visible ? "text" : "password"}
+      value={value}
+      onChange={onChange}
+      error={error}
+      required={required}
+      leftIcon={<Lock className="w-4 h-4" />}
+      rightElement={
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          className="absolute right-3 text-[#767682] hover:text-[#454651]"
-          aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+          className="text-gray-400 hover:text-gray-600"
           tabIndex={-1}
+          aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
         >
-          {visible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
-      </div>
-      {error && <p className="text-xs text-[#ba1a1a]">{error}</p>}
-    </div>
+      }
+    />
   );
 }

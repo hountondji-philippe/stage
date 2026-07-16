@@ -3,13 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import Button from "../ui/Button";
 import { ROUTES } from "../../router/paths";
-import { useAuth } from "../../features/auth/context/AuthContext"; // Import du contexte
-import logo from "../../assets/logo.png"; // Import de ton logo
+import { useAuth } from "../../features/auth/context/AuthContext";
+import logo from "../../assets/logo.png";
 
 export default function PublicHeader() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isAuthenticated, user } = useAuth(); // Utilisation réelle de l'Auth
+  const { isAuthenticated, user } = useAuth();
 
   function handleEspaceEtudiant() {
     if (!isAuthenticated) {
@@ -39,10 +39,10 @@ export default function PublicHeader() {
             Accueil
           </Link>
           <Link
-            to={ROUTES.recherche}
+            to={ROUTES.archive}
             className="text-sm font-semibold text-gray-600 transition-colors hover:text-[var(--color-primary-light)]"
           >
-            Rechercher un mémoire
+            Archive
           </Link>
           <a
             href="#a-propos"
@@ -70,7 +70,7 @@ export default function PublicHeader() {
       {mobileOpen && (
         <div className="md:hidden flex flex-col gap-4 border-t border-gray-100 bg-white px-6 py-6">
           <Link to={ROUTES.accueil} onClick={() => setMobileOpen(false)}>Accueil</Link>
-          <Link to={ROUTES.recherche} onClick={() => setMobileOpen(false)}>Rechercher un mémoire</Link>
+          <Link to={ROUTES.archive} onClick={() => setMobileOpen(false)}>Archive</Link>
           <a href="#a-propos" onClick={() => setMobileOpen(false)}>À propos</a>
           <Button variant="primary" fullWidth onClick={handleEspaceEtudiant}>
             {isAuthenticated ? "Mon Espace" : "Espace étudiant"}

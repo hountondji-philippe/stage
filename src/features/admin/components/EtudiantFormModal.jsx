@@ -8,14 +8,22 @@ const NIVEAUX = ["L1", "L2", "L3", "M1", "M2"];
 
 export default function EtudiantFormModal({ open, onClose, etudiant, onSaved }) {
   const { filieres } = useFilieres();
-  const { form, updateField, errors, serverError, loading, isEditing, submit } =
-    useEtudiantForm({
-      etudiant,
-      onSuccess: () => {
-        onSaved?.();
-        onClose();
-      },
-    });
+
+  const {
+    form,
+    updateField,
+    errors,
+    serverError,
+    loading,
+    isEditing,
+    submit,
+  } = useEtudiantForm({
+    etudiant,
+    onSuccess: () => {
+      onSaved?.();
+      onClose();
+    },
+  });
 
   return (
     <Modal
@@ -28,6 +36,7 @@ export default function EtudiantFormModal({ open, onClose, etudiant, onSaved }) 
           <Button variant="outline" onClick={onClose}>
             Annuler
           </Button>
+
           <Button variant="primary" loading={loading} onClick={submit}>
             {isEditing ? "Enregistrer" : "Ajouter l'étudiant"}
           </Button>
@@ -36,7 +45,9 @@ export default function EtudiantFormModal({ open, onClose, etudiant, onSaved }) 
     >
       <form onSubmit={submit} className="space-y-4">
         {serverError && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{serverError}</div>
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            {serverError}
+          </div>
         )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -49,22 +60,28 @@ export default function EtudiantFormModal({ open, onClose, etudiant, onSaved }) 
             error={errors.matricule}
             required
           />
+
           <Input
-            label="Promo"
-            name="promo"
-            type="number"
-            value={form.promo}
-            onChange={(e) => updateField("promo", e.target.value)}
-            placeholder="2024"
-            error={errors.promo}
+            label="Année scolaire"
+            name="annee_scolaire"
+            value={form.annee_scolaire}
+            onChange={(e) =>
+              updateField("annee_scolaire", e.target.value)
+            }
+            placeholder="Ex: 2025-2026"
+            error={errors.annee_scolaire}
             required
           />
         </div>
 
         <div className="w-full">
-          <label htmlFor="niveau" className="mb-1.5 block text-sm font-medium text-gray-900">
+          <label
+            htmlFor="niveau"
+            className="mb-1.5 block text-sm font-medium text-gray-900"
+          >
             Niveau
           </label>
+
           <select
             id="niveau"
             value={form.niveau}
@@ -74,13 +91,17 @@ export default function EtudiantFormModal({ open, onClose, etudiant, onSaved }) 
             }`}
           >
             <option value="">Sélectionnez un niveau</option>
+
             {NIVEAUX.map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
             ))}
           </select>
-          {errors.niveau && <p className="mt-1 text-xs text-red-600">{errors.niveau}</p>}
+
+          {errors.niveau && (
+            <p className="mt-1 text-xs text-red-600">{errors.niveau}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -93,6 +114,7 @@ export default function EtudiantFormModal({ open, onClose, etudiant, onSaved }) 
             error={errors.nom}
             required
           />
+
           <Input
             label="Prénom"
             name="prenom"
@@ -116,9 +138,13 @@ export default function EtudiantFormModal({ open, onClose, etudiant, onSaved }) 
         />
 
         <div className="w-full">
-          <label htmlFor="filiere_id" className="mb-1.5 block text-sm font-medium text-gray-900">
+          <label
+            htmlFor="filiere_id"
+            className="mb-1.5 block text-sm font-medium text-gray-900"
+          >
             Filière
           </label>
+
           <select
             id="filiere_id"
             value={form.filiere_id}
@@ -128,13 +154,19 @@ export default function EtudiantFormModal({ open, onClose, etudiant, onSaved }) 
             }`}
           >
             <option value="">Sélectionnez une filière</option>
+
             {filieres.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.nom}
               </option>
             ))}
           </select>
-          {errors.filiere_id && <p className="mt-1 text-xs text-red-600">{errors.filiere_id}</p>}
+
+          {errors.filiere_id && (
+            <p className="mt-1 text-xs text-red-600">
+              {errors.filiere_id}
+            </p>
+          )}
         </div>
       </form>
     </Modal>

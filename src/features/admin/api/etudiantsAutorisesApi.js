@@ -8,12 +8,12 @@ const BASE_URL = "/admin/etudiants-autorises";
  *
  * Réponse Laravel paginée : { data: [...], current_page, last_page, total, ... }
  */
-export async function getEtudiants({ recherche = "", filiereId = "", promo = "" } = {}) {
+export async function getEtudiants({ recherche = "", filiereId = "",  annee_scolaire = "" } = {}) {
   const { data } = await apiClient.get(BASE_URL, {
     params: {
       recherche: recherche || undefined,
       filiere_id: filiereId || undefined,
-      promo: promo || undefined,
+      annee_scolaire: annee_scolaire || undefined,
     },
   });
   return data; // { data: [...], current_page, last_page, total, ... }

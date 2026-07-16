@@ -1,83 +1,95 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { authApi } from '../api/authApi';
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { activerCompte as activerCompteApi, renvoyerLien as renvoyerLienApi } from "../api/authApi";
+import { useAuth } from "../context/AuthContext";
+import { ROUTES } from "../../../router/paths";
 
 export const ETATS = {
-  CHARGEMENT: 'chargement',
-  SUCCES: 'succes',
-  ERREUR: 'erreur',
+  FORMULAIRE: "formulaire",
+  INVALIDE: "invalide",
+  DEJA_ACTIVE: "deja_active",
+  NIVEAU_NON_AUTORISE: "niveau_non_autorise",
+  EXPIRE: "expire",
 };
 
-/**
- * Écran 5 — Activation de compte.
- * Aucune action de l'utilisateur : l'ouverture du lien (?token=...) déclenche
- * immédiatement POST /auth/activer-compte au montage du composant.
- */
 export function useActivation() {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const { token } = useParams();
+  const navigate = useNavigate();
+  const { refetchUser } = useAuth();
 
-  const [etat, setEtat] = useState(ETATS.CHARGEMENT);
-  const [messageErreur, setMessageErreur] = useState('');
+  const [etat, setEtat] = useState(token ? ETATS.FORMULAIRE : ETATS.INVALIDE);
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [erreur, setErreur] = useState(null);
 
-  const [emailRenvoi, setEmailRenvoi] = useState('');
-  const [envoiEnCours, setEnvoiEnCours] = useState(false);
-  const [messageRenvoi, setMessageRenvoi] = useState(null);
+  const [matriculeRenvoi, setMatriculeRenvoi] = useState("");
+  const [renvoiLoading, setRenvoiLoading] = useState(false);
+  const [renvoiMessage, setRenvoiMessage] = useState(null);
 
-  useEffect(() => {
-    if (!token) {
-      setEtat(ETATS.ERREUR);
-      setMessageErreur('Lien invalide.');
+  const activerCompte = async (e) => {
+    e.preventDefault();
+    setErreur(null);
+
+    if (password.length < 8) {
+      setErreur("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (password !== passwordConfirmation) {
+      setErreur("Les mots de passe ne correspondent pas.");
       return;
     }
 
-    let annule = false;
+    setLoading(true);
+    try {
+      const data = await activerCompteApi({ token, password, password_confirmation: passwordConfirmation });
+      localStorage.setItem("mplus_token", data.token);
+      await refetchUser();
+      navigate(ROUTES.espaceEtudiant, { replace: true });
+    } catch (err) {
+      const status = err.response?.status;
+      const data = err.response?.data;
 
-    authApi
-      .activerCompte(token)
-      .then((data) => {
-        if (annule) return;
-        if (data.success) {
-          setEtat(ETATS.SUCCES);
-        } else {
-          setEtat(ETATS.ERREUR);
-          setMessageErreur(data.message || 'Lien expiré.');
-        }
-      })
-      .catch((err) => {
-        if (annule) return;
-        setEtat(ETATS.ERREUR);
-        setMessageErreur(err.message);
-      });
-
-    return () => {
-      annule = true;
-    };
-  }, [token]);
+      if (status === 404) setEtat(ETATS.INVALIDE);
+      else if (status === 409) setEtat(ETATS.DEJA_ACTIVE);
+      else if (status === 403) setEtat(ETATS.NIVEAU_NON_AUTORISE);
+      else if (status === 410) setEtat(ETATS.EXPIRE);
+      else if (status === 422) setErreur(data?.errors ? Object.values(data.errors)[0]?.[0] : data?.message);
+      else setErreur("Une erreur est survenue. Réessayez dans quelques instants.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renvoyerLien = async () => {
-    if (!emailRenvoi.trim()) return;
+    if (!matriculeRenvoi.trim()) return;
 
-    setEnvoiEnCours(true);
-    setMessageRenvoi(null);
+    setRenvoiLoading(true);
+    setRenvoiMessage(null);
 
     try {
-      const data = await authApi.renvoyerLien(emailRenvoi.trim());
-      setMessageRenvoi({ type: 'succes', texte: data.message || 'Lien renvoyé, vérifiez votre boîte mail.' });
+      const data = await renvoyerLienApi(matriculeRenvoi.trim());
+      setRenvoiMessage({ type: "succes", texte: data.message || "Un nouveau lien a été envoyé." });
     } catch (err) {
-      setMessageRenvoi({ type: 'erreur', texte: err.message });
+      setRenvoiMessage({ type: "erreur", texte: err.response?.data?.message || "Une erreur est survenue." });
     } finally {
-      setEnvoiEnCours(false);
+      setRenvoiLoading(false);
     }
   };
 
   return {
     etat,
-    messageErreur,
-    emailRenvoi,
-    setEmailRenvoi,
-    envoiEnCours,
-    messageRenvoi,
+    password,
+    setPassword,
+    passwordConfirmation,
+    setPasswordConfirmation,
+    loading,
+    erreur,
+    activerCompte,
+    matriculeRenvoi,
+    setMatriculeRenvoi,
+    renvoiLoading,
+    renvoiMessage,
     renvoyerLien,
   };
 }

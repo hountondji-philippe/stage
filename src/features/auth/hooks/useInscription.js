@@ -1,81 +1,93 @@
-import { useState } from 'react';
-import { authApi } from '../api/authApi';
+import { useState, useEffect } from "react";
+import { verifierMatricule as verifierMatriculeApi, renvoyerLien as renvoyerLienApi } from "../api/authApi";
 
-/**
- * Écran 4 — Inscription par matricule (2 étapes) :
- * 1. Matricule -> POST verifier-matricule
- * 2. Email + mot de passe + conditions -> POST creer-compte (envoie l'email d'activation)
- */
+const DUREE_ATTENTE = 60; // secondes avant de pouvoir renvoyer le lien
+
+function messageErreurParStatut(status, data) {
+  switch (status) {
+    case 404:
+      return { message: "Vérifiez la saisie ou contactez la scolarité.", dejaActive: false };
+    case 409:
+      return { message: "Un compte existe déjà pour ce matricule.", dejaActive: true };
+    case 403:
+      return {
+        message: "L'inscription en ligne est réservée aux étudiants de Licence 3, Master 1 et Master 2.",
+        dejaActive: false,
+      };
+    case 422:
+      return {
+        message: data?.errors ? Object.values(data.errors)[0]?.[0] : data?.message || "Données invalides.",
+        dejaActive: false,
+      };
+    default:
+      return { message: "Une erreur est survenue. Réessayez dans quelques instants.", dejaActive: false };
+  }
+}
+
 export function useInscription() {
-  const [step, setStep] = useState(1);
-  const [matricule, setMatricule] = useState('');
-  const [nom, setNom] = useState('');
-  const [emailSuggere, setEmailSuggere] = useState('');
-
-  const [loadingMatricule, setLoadingMatricule] = useState(false);
-  const [erreurMatricule, setErreurMatricule] = useState(null); // { alreadyActivated, message }
-
-  const [loadingCompte, setLoadingCompte] = useState(false);
-  const [erreurCompte, setErreurCompte] = useState(null);
+  const [matricule, setMatricule] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [erreur, setErreur] = useState(null); // { message, dejaActive }
   const [emailEnvoye, setEmailEnvoye] = useState(false);
+
+  const [renvoiLoading, setRenvoiLoading] = useState(false);
+  const [renvoiMessage, setRenvoiMessage] = useState(null); // { type: 'succes' | 'erreur', texte }
+  const [chrono, setChrono] = useState(0);
+
+  // Décompte du chrono de patience avant de pouvoir renvoyer le lien
+  useEffect(() => {
+    if (chrono <= 0) return;
+    const interval = setInterval(() => {
+      setChrono((c) => Math.max(0, c - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [chrono]);
 
   const verifierMatricule = async () => {
     if (!matricule.trim()) return;
 
-    setLoadingMatricule(true);
-    setErreurMatricule(null);
+    setLoading(true);
+    setErreur(null);
 
     try {
-      const data = await authApi.verifierMatricule(matricule.trim());
-
-      if (!data.status) {
-        setErreurMatricule({
-          alreadyActivated: !!data.alreadyActivated,
-          message: data.alreadyActivated
-            ? 'Votre compte est déjà activé.'
-            : data.message || 'Matricule introuvable.',
-        });
-        return;
-      }
-
-      setNom(data.nom || '');
-      setEmailSuggere(data.email || '');
-      setStep(2);
+      await verifierMatriculeApi(matricule.trim());
+      setEmailEnvoye(true);
+      setChrono(DUREE_ATTENTE);
     } catch (err) {
-      setErreurMatricule({ alreadyActivated: false, message: err.message });
+      setErreur(messageErreurParStatut(err.response?.status, err.response?.data));
     } finally {
-      setLoadingMatricule(false);
+      setLoading(false);
     }
   };
 
-  const creerCompte = async ({ email, password, passwordConfirmation, accepteConditions }) => {
-    if (!accepteConditions) return;
+  const renvoyerLien = async () => {
+    if (chrono > 0) return;
 
-    setLoadingCompte(true);
-    setErreurCompte(null);
+    setRenvoiLoading(true);
+    setRenvoiMessage(null);
 
     try {
-      await authApi.creerCompte({ matricule, email, password, passwordConfirmation });
-      setEmailEnvoye(true);
+      const data = await renvoyerLienApi(matricule.trim());
+      setRenvoiMessage({ type: "succes", texte: data.message || "Un nouveau lien a été envoyé." });
+      setChrono(DUREE_ATTENTE);
     } catch (err) {
-      setErreurCompte(err);
+      const { message } = messageErreurParStatut(err.response?.status, err.response?.data);
+      setRenvoiMessage({ type: "erreur", texte: message });
     } finally {
-      setLoadingCompte(false);
+      setRenvoiLoading(false);
     }
   };
 
   return {
-    step,
     matricule,
     setMatricule,
-    nom,
-    emailSuggere,
-    loadingMatricule,
-    erreurMatricule,
-    loadingCompte,
-    erreurCompte,
+    loading,
+    erreur,
     emailEnvoye,
     verifierMatricule,
-    creerCompte,
+    renvoiLoading,
+    renvoiMessage,
+    chrono,
+    renvoyerLien,
   };
 }

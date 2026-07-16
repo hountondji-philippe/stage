@@ -1,10 +1,10 @@
 export const ROUTES = {
   accueil: "/",
-  recherche: "/archive",
+  archive: "/archive",
   memoirePublic: (id) => `/memoires/${id}`,
 
   inscription: "/inscription",
-  activation: "/activation",
+  activation: (token) => `/activation/${token}`,
   motDePasseOublie: "/mot-de-passe-oublie",
   reinitialiserMotDePasse: "/reinitialiser-mot-de-passe",
   connexionEtudiant: "/connexion-etudiant",
