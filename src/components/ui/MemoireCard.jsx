@@ -1,19 +1,28 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Eye, User, GraduationCap, School } from "lucide-react";
+import { apiClient } from "../../lib/apiClient";
 import { ROUTES } from "../../router/paths";
 
 export function MemoireCard({ memoire }) {
   const navigate = useNavigate();
+  const [imageEnErreur, setImageEnErreur] = useState(false);
 
-  const auteur = memoire.user?.etudiantAutorise
-    ? `${memoire.user.etudiantAutorise.prenom} ${memoire.user.etudiantAutorise.nom}`
-    : "Auteur inconnu";
+  const auteur = memoire.user?.etudiant_autorise
+  ? `${memoire.user.etudiant_autorise.prenom} ${memoire.user.etudiant_autorise.nom}`
+  : "Auteur inconnu";
+  const afficherApercu = Boolean(memoire.apercu) && !imageEnErreur;
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
       <div className="mb-4 flex h-40 w-full items-center justify-center overflow-hidden rounded-lg bg-gray-50">
-        {memoire.couverture_url ? (
-          <img src={memoire.couverture_url} alt="Couverture" className="h-full w-full object-cover" />
+        {afficherApercu ? (
+          <img
+            src={`${apiClient.defaults.baseURL}/memoires/${memoire.id}/apercu`}
+            alt={`Aperçu de ${memoire.titre}`}
+            className="h-full w-full object-cover"
+            onError={() => setImageEnErreur(true)}
+          />
         ) : (
           <FileText size={48} className="text-gray-300" />
         )}
@@ -34,9 +43,7 @@ export function MemoireCard({ memoire }) {
       </h3>
 
       {memoire.resume && (
-        <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-gray-500">
-          {memoire.resume}
-        </p>
+        <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-gray-500">{memoire.resume}</p>
       )}
 
       <div className="mb-6 space-y-2 text-sm text-gray-600">
@@ -68,4 +75,5 @@ export function MemoireCard({ memoire }) {
       </div>
     </div>
   );
+  
 }

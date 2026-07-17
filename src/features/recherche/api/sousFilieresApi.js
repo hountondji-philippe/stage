@@ -5,5 +5,5 @@ export async function getSousFilieres(filiereId) {
   const { data } = await apiClient.get("/sous-filieres", {
     params: filiereId ? { filiere_id: filiereId } : {},
   });
-  return extraireTableau(data, "sousFilieres"); // ⚠️ à confirmer, peut être "sous_filieres"
+  return extraireTableau(data, "sous_filieres"); // au lieu de "sousFilieres"
 }
