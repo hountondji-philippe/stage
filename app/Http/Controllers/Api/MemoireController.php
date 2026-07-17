@@ -94,6 +94,21 @@ $memoires = $query->paginate(12);
         return response()->json(['memoires' => $memoires]);
     }
 
+    public function monFichier(Request $request, Memoire $memoire, string $type)
+{
+    if ($memoire->user_id !== $request->user()->id) {
+        return response()->json(['message' => 'Action non autorisée.'], 403);
+    }
+
+    if (!in_array($type, ['memoire', 'preuve'])) {
+        abort(404);
+    }
+
+    $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
+
+    return Storage::disk('local')->response($chemin);
+}
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
