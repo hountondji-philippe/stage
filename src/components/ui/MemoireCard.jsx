@@ -14,8 +14,7 @@ export function MemoireCard({ memoire }) {
   const afficherApercu = Boolean(memoire.apercu) && !imageEnErreur;
  // 👇 Ajoute ceci
   console.log("URL de l'image :", `${apiClient.defaults.baseURL}/memoires/${memoire.id}/apercu`);
-  console.log("Mémoire :", memoire);
-
+console.log(JSON.stringify(memoire, null, 2));
   return (
     <div className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
       <div className="mb-4 flex h-40 w-full items-center justify-center overflow-hidden rounded-lg bg-gray-50">

@@ -94,7 +94,7 @@ export async function importEtudiants(file) {
   const formData = new FormData();
   formData.append("fichier", file);
 
-  const { data } = await apiClient.post(`${BASE_URL}/import`, formData, {
+  const { data } = await apiClient.post(`${BASE_URL}/importer`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data;

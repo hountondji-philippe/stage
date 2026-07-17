@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
+import LogoutConfirmModal from "../../../components/ui/LogoutConfirmModal";
 
 const NAV_ITEMS = [
   { to: ROUTES.espaceEtudiant, label: "Mes dépôts", icon: FolderOpen },
@@ -43,6 +44,7 @@ function NavItem({ to, label, icon: Icon, onClick, className = "" }) {
 
 export default function EtudiantLayout({ children }) {
   const [menuOuvert, setMenuOuvert] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, logout } = useAuth();
 
   const etudiantAutorise = user?.etudiant_autorise;
@@ -51,6 +53,16 @@ export default function EtudiantLayout({ children }) {
     : "Étudiant";
   const filiereNom = etudiantAutorise?.filiere?.nom || "";
   const initiale = etudiantAutorise?.prenom?.charAt(0) || "É";
+
+  const handleLogoutClick = () => {
+    setMenuOuvert(false);
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
+    logout();
+  };
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
@@ -72,7 +84,7 @@ export default function EtudiantLayout({ children }) {
         </nav>
 
         <button
-          onClick={logout}
+          onClick={handleLogoutClick}
           className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-red-300 hover:bg-white/5"
         >
           <LogOut size={20} />
@@ -125,7 +137,7 @@ export default function EtudiantLayout({ children }) {
                   Mon profil
                 </NavLink>
                 <button
-                  onClick={logout}
+                  onClick={handleLogoutClick}
                   className="block w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
                 >
                   Se déconnecter
@@ -137,6 +149,14 @@ export default function EtudiantLayout({ children }) {
       </header>
 
       <main className="min-h-screen px-4 pb-10 pt-28 md:ml-[280px] md:px-10">{children}</main>
+
+      {showLogoutConfirm && (
+        <LogoutConfirmModal
+          onCancel={() => setShowLogoutConfirm(false)}
+          onConfirm={handleConfirmLogout}
+          message="Tu devras te reconnecter pour accéder à ton espace étudiant."
+        />
+      )}
     </div>
   );
 }

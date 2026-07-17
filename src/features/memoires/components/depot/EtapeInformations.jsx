@@ -1,7 +1,6 @@
 import Button from "../../../../components/ui/Button";
 import { useFilieres } from "../../hooks/useFilieres";
-import { useSousFilieres } from "../../hooks/useSousFilieres";
-
+import { useSousFilieres } from "../../../admin/hooks/useSousFilieres";
 const ANNEE_COURANTE = new Date().getFullYear();
 const ANNEES = [ANNEE_COURANTE, ANNEE_COURANTE - 1, ANNEE_COURANTE - 2].map(String);
 const CYCLES = [
