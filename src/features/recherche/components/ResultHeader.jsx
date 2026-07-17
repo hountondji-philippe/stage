@@ -19,8 +19,7 @@ export default function ResultHeader({ count, sort, onSortChange }) {
         >
           <option value="recent">Plus récent</option>
           <option value="ancien">Plus ancien</option>
-          <option value="alphabetique">Ordre alphabétique</option>
-        </select>
+<option value="titre">Ordre alphabétique</option>        </select>
       </div>
     </div>
   );
