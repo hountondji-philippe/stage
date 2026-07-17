@@ -40,11 +40,11 @@ class MemoireController extends Controller
         }
 
         $tri = $request->input('tri', 'recent');
-match ($tri) {
-    'ancien' => $query->oldest('valide_le'),
-    'titre' => $query->orderBy('titre'),
-    default => $query->latest('valide_le'),
-};
+    match ($tri) {
+        'ancien' => $query->oldest('valide_le'),
+        'titre' => $query->orderBy('titre'),
+        default => $query->latest('valide_le'),
+    };
 
 $memoires = $query->paginate(12);
 
