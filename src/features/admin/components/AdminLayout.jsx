@@ -6,6 +6,7 @@ import {
   Archive,
   FilePlus2,
   Users,
+  Layers,
   UserRound,
   BarChart3,
   LogOut,
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { to: "/admin/memoires", label: "Liste des mémoires", icon: Archive },
   { to: "/admin/memoires/ajouter", label: "Ajouter un mémoire", icon: FilePlus2 },
   { to: ROUTES.etudiantsAutorisesAdmin, label: "Étudiants autorisés", icon: Users },
+  { to: "/admin/filieres", label: "Filières", icon: Layers },
   { to: "/admin/profil", label: "Mon profil", icon: UserRound },
   { to: "/admin/statistiques", label: "Statistiques", icon: BarChart3 },
 ];

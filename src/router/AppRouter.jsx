@@ -23,6 +23,7 @@ import DepotDetailPage from "../features/admin/pages/DepotDetailPage";
 import ProfilAdminPage from "../features/admin/pages/ProfilAdminPage";
 import MemoireDetailPage from "../features/recherche/pages/MemoireDetailPage";
 import MemoiresListePage from "../features/admin/pages/MemoiresListePage";
+import ListeFilierePage from "../features/admin/pages/ListeFilierePage";
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -120,7 +121,14 @@ export default function AppRouter() {
     </RouteProtegee>
   }
 />
-
+<Route
+  path="/admin/filieres"
+  element={
+    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+      <ListeFilierePage />
+    </RouteProtegee>
+  }
+/>
 <Route
   path="/admin/memoires"
   element={

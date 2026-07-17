@@ -5,3 +5,8 @@ export async function getFilieres() {
   const { data } = await apiClient.get("/filieres");
   return extraireTableau(data, "filieres");
 }
+
+export async function getSousFilieres(filiereId) {
+  const { data } = await apiClient.get("/sous-filieres", { params: { filiere_id: filiereId } });
+  return extraireTableau(data, "sous_filieres");
+}

@@ -1,18 +1,36 @@
 import Button from "../../../../components/ui/Button";
 import { useFilieres } from "../../hooks/useFilieres";
+import { useSousFilieres } from "../../hooks/useSousFilieres";
+
 const ANNEE_COURANTE = new Date().getFullYear();
 const ANNEES = [ANNEE_COURANTE, ANNEE_COURANTE - 1, ANNEE_COURANTE - 2].map(String);
+
 export default function EtapeInformations({ data, onChange, onNext }) {
   const { filieres, loading: loadingFilieres } = useFilieres();
+  const { sousFilieres, loading: loadingSousFilieres } = useSousFilieres(data.filiere_id);
 
   function handleField(e) {
     const { name, value } = e.target;
+
+    if (name === "filiere_id") {
+      // On change de filière : la sous-filière précédemment choisie ne correspond plus forcément
+      onChange({ ...data, filiere_id: value, sous_filiere_id: "" });
+      return;
+    }
+
     onChange({ ...data, [name]: value });
   }
 
   const resumeLength = data.resume?.length || 0;
+  const aDesSousFilieres = sousFilieres.length > 0;
+
   const canGoNext = Boolean(
-    data.titre?.trim() && data.resume?.trim() && data.filiere_id && data.annee && data.encadrant?.trim()
+    data.titre?.trim() &&
+      data.resume?.trim() &&
+      data.filiere_id &&
+      data.annee &&
+      data.encadrant?.trim() &&
+      (!aDesSousFilieres || data.sous_filiere_id)
   );
 
   return (
@@ -83,6 +101,28 @@ export default function EtapeInformations({ data, onChange, onNext }) {
             </select>
           </div>
         </div>
+
+        {data.filiere_id && aDesSousFilieres && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-[var(--color-text)]">Sous-filière</label>
+            <select
+              name="sous_filiere_id"
+              value={data.sous_filiere_id || ""}
+              onChange={handleField}
+              disabled={loadingSousFilieres}
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-[var(--color-primary-light)] focus:ring-2 focus:ring-[var(--color-primary-light)]/40"
+            >
+              <option value="" disabled>
+                {loadingSousFilieres ? "Chargement..." : "Choisir une sous-filière"}
+              </option>
+              {sousFilieres.map((sf) => (
+                <option key={sf.id} value={sf.id}>
+                  {sf.nom}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-[var(--color-text)]">

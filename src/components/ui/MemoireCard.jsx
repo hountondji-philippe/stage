@@ -5,8 +5,8 @@ import { ROUTES } from "../../router/paths";
 export function MemoireCard({ memoire }) {
   const navigate = useNavigate();
 
-  const auteur = memoire.user?.etudiant_autorise
-    ? `${memoire.user.etudiant_autorise.prenom} ${memoire.user.etudiant_autorise.nom}`
+  const auteur = memoire.user?.etudiantAutorise
+    ? `${memoire.user.etudiantAutorise.prenom} ${memoire.user.etudiantAutorise.nom}`
     : "Auteur inconnu";
 
   return (
@@ -29,9 +29,15 @@ export function MemoireCard({ memoire }) {
         <span className="text-sm font-medium text-gray-500">{memoire.annee}</span>
       </div>
 
-      <h3 className="mb-4 line-clamp-2 text-lg font-bold leading-tight text-gray-900">
+      <h3 className="mb-2 line-clamp-2 text-lg font-bold leading-tight text-gray-900">
         {memoire.titre}
       </h3>
+
+      {memoire.resume && (
+        <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-gray-500">
+          {memoire.resume}
+        </p>
+      )}
 
       <div className="mb-6 space-y-2 text-sm text-gray-600">
         <div className="flex items-center gap-2">
