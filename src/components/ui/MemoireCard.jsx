@@ -20,7 +20,10 @@ export function MemoireCard({ memoire }) {
       </div>
 
       <div className="mb-4 flex items-center justify-between">
-        <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
+        <span
+          className="rounded-full px-3 py-1 text-xs font-bold text-white"
+          style={{ backgroundColor: "var(--color-status-valide)" }}
+        >
           Validé
         </span>
         <span className="text-sm font-medium text-gray-500">{memoire.annee}</span>

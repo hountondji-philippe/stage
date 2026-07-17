@@ -2,17 +2,21 @@ import { useEffect, useState } from "react";
 import { getMemoiresEnAttente } from "../api/adminService";
 
 /**
- * ⚠️ Pas de route GET /api/admin/memoires/{id} dédiée côté backend.
- * On récupère la liste des dépôts en attente et on retrouve celui
- * qui nous intéresse par son id. Si un jour tu ajoutes un vrai
- * endpoint de détail, remplace juste le contenu de ce hook.
+ * @param {string|number} id
+ * @param {object|null} preloaded - mémoire déjà en main (venant d'une liste
+ * précédente, passé via navigate(path, { state: { memoire } })). Si présent,
+ * on évite tout fetch. Sinon, fallback sur la liste "en attente" — donc un
+ * accès direct par URL à un mémoire déjà validé/rejeté échouera (pas de
+ * route GET /admin/memoires/{id} dédiée côté backend).
  */
-export function useMemoireDetail(id) {
-  const [memoire, setMemoire] = useState(null);
-  const [loading, setLoading] = useState(true);
+export function useMemoireDetail(id, preloaded) {
+  const [memoire, setMemoire] = useState(preloaded ?? null);
+  const [loading, setLoading] = useState(!preloaded);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (preloaded) return; // déjà en main, rien à faire
+
     let cancelled = false;
 
     (async () => {
@@ -25,7 +29,7 @@ export function useMemoireDetail(id) {
           if (found) {
             setMemoire(found);
           } else {
-            setError("Ce dépôt est introuvable ou a déjà été traité.");
+            setError("Ce dépôt est introuvable, ou a déjà été traité (consultez-le depuis la liste des mémoires).");
           }
         }
       } catch (err) {
@@ -38,7 +42,7 @@ export function useMemoireDetail(id) {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, preloaded]);
 
   return { memoire, loading, error };
 }

@@ -2,7 +2,8 @@ import { apiClient } from '../../../lib/apiClient';
 
 // --- Gestion des Mémoires ---
 export const getMemoiresEnAttente = () => apiClient.get('/admin/memoires/en-attente');
-export const getAllMemoires = () => apiClient.get('/admin/memoires');
+export const getAllMemoires = ({ statut, page } = {}) =>
+  apiClient.get('/admin/memoires', { params: { statut: statut || undefined, page } });
 export const validerMemoire = (id) => apiClient.post(`/admin/memoires/${id}/valider`);
 export const rejeterMemoire = (id, data) => apiClient.post(`/admin/memoires/${id}/rejeter`, data);
 export const supprimerMemoire = (id) => apiClient.delete(`/admin/memoires/${id}`);

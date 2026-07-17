@@ -1,19 +1,21 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "../components/AdminLayout";
 import DepotDetailPdfViewer from "../components/DepotDetailPdfViewer";
 import DepotDetailInfoCard from "../components/DepotDetailInfoCard";
 import DepotDetailActions from "../components/DepotDetailActions";
+import StatusBadge from "../../../components/ui/StatusBadge";
 import { useMemoireDetail } from "../hooks/useMemoireDetail";
 
 export default function DepotDetailPage() {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const { memoire, loading, error } = useMemoireDetail(id);
+  const { memoire, loading, error } = useMemoireDetail(id, location.state?.memoire);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   function retourListe() {
-    navigate("/admin/depots-en-attente");
+    navigate(-1);
   }
 
   if (loading) {
@@ -61,7 +63,7 @@ export default function DepotDetailPage() {
         {/* Fil d'ariane */}
         <nav className="flex items-center gap-2 text-sm text-gray-500">
           <button onClick={retourListe} className="hover:text-[var(--color-primary)]">
-            Dépôts en attente
+            Retour
           </button>
           <span>/</span>
           <span className="max-w-[240px] truncate font-semibold text-gray-900 md:max-w-none">
@@ -74,10 +76,7 @@ export default function DepotDetailPage() {
           <h1 className="mb-2 text-xl font-extrabold leading-tight text-[var(--color-primary)] md:text-2xl">
             {memoire.titre}
           </h1>
-          <span className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-orange-500" />
-            En attente
-          </span>
+          <StatusBadge status={memoire.statut} />
         </div>
 
         {/* Deux colonnes */}
@@ -92,11 +91,19 @@ export default function DepotDetailPage() {
 
           <div className="flex flex-col gap-6 lg:col-span-4">
             <DepotDetailInfoCard memoire={memoire} />
-            <DepotDetailActions
-              memoireId={memoire.id}
-              onValidated={retourListe}
-              onRejected={retourListe}
-            />
+            {memoire.statut === "en_attente" ? (
+              <DepotDetailActions
+                memoireId={memoire.id}
+                onValidated={retourListe}
+                onRejected={retourListe}
+              />
+            ) : (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                {memoire.statut === "valide"
+                  ? "Ce mémoire a déjà été validé — aucune action de validation possible ici."
+                  : "Ce mémoire a déjà été rejeté — aucune action possible ici."}
+              </div>
+            )}
           </div>
         </div>
       </div>

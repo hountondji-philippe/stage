@@ -5,7 +5,8 @@ import { useAuth } from "../../auth/context/AuthContext";
 
 export default function CtaFinalSection() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  const isAuthenticated = Boolean(user);
 
   return (
     <section className="py-20 px-6">
@@ -13,13 +14,13 @@ export default function CtaFinalSection() {
         <h2 className="mb-6 text-3xl font-black">Prêt à valoriser votre travail ?</h2>
         <p className="mb-10 text-lg opacity-90">Rejoignez la communauté académique de l'ENEAM.</p>
         <div className="flex flex-col justify-center gap-4 sm:flex-row">
-          <Button 
-            variant="accent" 
+          <Button
+            variant="accent"
             onClick={() => navigate(isAuthenticated ? ROUTES.depotEtudiant : ROUTES.inscription)}
           >
             Déposer mon mémoire
           </Button>
-          <Button variant="outline" className="border-white text-white hover:bg-white/10">
+          <Button variant="outline" className="!border-white !text-white hover:!bg-white/10">
             Contacter l'administration
           </Button>
         </div>

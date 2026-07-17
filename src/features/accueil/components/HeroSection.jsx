@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { ROUTES } from "../../../router/paths";
-import { useAuth } from "../../auth/context/AuthContext"; // Import du contexte
-import heroBg from "../../../assets/auth-etudiant-bg.jpg"; // Import de l'image
+import { useAuth } from "../../auth/context/AuthContext";
+import heroBg from "../../../assets/auth-etudiant-bg.jpg";
 
 export default function HeroSection() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const { isAuthenticated, user } = useAuth(); // Utilisation réelle
+  const { user } = useAuth();
+  const isAuthenticated = Boolean(user);
 
   function handleSearch(e) {
     e.preventDefault();
@@ -58,7 +59,7 @@ export default function HeroSection() {
           </div>
           <button
             type="submit"
-            className="rounded-lg bg-[var(--color-primary)] px-8 py-3 font-bold text-white transition-colors hover:bg-[var(--color-secondary)]"
+            className="rounded-lg bg-[var(--color-primary)] px-8 py-3 font-bold text-white transition-colors hover:bg-[var(--color-primary-light)]"
           >
             Rechercher
           </button>

@@ -22,6 +22,7 @@ import DepotsPage from "../features/admin/pages/DepotsPage";
 import DepotDetailPage from "../features/admin/pages/DepotDetailPage";
 import ProfilAdminPage from "../features/admin/pages/ProfilAdminPage";
 import MemoireDetailPage from "../features/recherche/pages/MemoireDetailPage";
+import MemoiresListePage from "../features/admin/pages/MemoiresListePage";
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -120,6 +121,14 @@ export default function AppRouter() {
   }
 />
 
+<Route
+  path="/admin/memoires"
+  element={
+    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+      <MemoiresListePage />
+    </RouteProtegee>
+  }
+/>
 
 <Route
   path="/admin/profil"

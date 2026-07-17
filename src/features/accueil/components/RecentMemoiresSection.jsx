@@ -7,8 +7,10 @@ export default function RecentMemoiresSection({ memoires }) {
     <section className="py-20 px-6 bg-white">
       <div className="mx-auto max-w-[1280px]">
         <div className="mb-12 flex items-center justify-between">
-          <h2 className="text-3xl font-bold text-[var(--color-primary)]">Mémoires récents</h2>
-          <Link to={ROUTES.recherche} className="font-semibold text-[var(--color-secondary)] hover:underline">
+          <h2 className="relative text-3xl font-bold text-[var(--color-primary)] after:absolute after:-bottom-2 after:left-0 after:h-1 after:w-20 after:rounded-full after:bg-[var(--color-accent)]">
+            Mémoires récents
+          </h2>
+          <Link to={ROUTES.recherche} className="font-semibold text-[var(--color-primary-light)] hover:underline">
             Voir tout
           </Link>
         </div>
