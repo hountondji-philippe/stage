@@ -215,7 +215,7 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         return response()->json([
-            'user' => $request->user()->load('etudiantAutorise'),
+            'user' => $request->user()->load('etudiantAutorise.filiere'),
         ]);
     }
 
