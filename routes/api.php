@@ -22,6 +22,7 @@ Route::get('/memoires/{memoire}/fichier', [MemoireController::class, 'fichierPub
 Route::get('/memoires/{memoire}/telecharger', [MemoireController::class, 'telechargerPublic']);
 Route::get('/filieres', [FiliereController::class, 'index']);
 Route::get('/sous-filieres', [SousFiliereController::class, 'index']);
+Route::get('/memoires/{memoire}/apercu', [MemoireController::class, 'apercuPublic']);
 
 
 Route::middleware('auth:sanctum')->group(function () {

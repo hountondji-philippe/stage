@@ -8,12 +8,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Process;
 
 class MemoireController extends Controller
 {
     public function rechercherPublic(Request $request)
     {
-        $query = Memoire::valides()->with(['filiere', 'sousFiliere', 'user']);
+        $query = Memoire::valides()->with(['filiere', 'sousFiliere', 'user.etudiantAutorise']);
 
         if ($request->filled('filiere_id')) {
             $query->where('filiere_id', $request->filiere_id);
@@ -26,6 +27,9 @@ class MemoireController extends Controller
         if ($request->filled('annee')) {
             $query->where('annee', $request->annee);
         }
+        if ($request->filled('cycle')) {
+            $query->where('cycle', $request->cycle);
+        }
 
         if ($request->filled('recherche')) {
             $terme = $request->recherche;
@@ -35,7 +39,14 @@ class MemoireController extends Controller
             });
         }
 
-        $memoires = $query->latest('valide_le')->paginate(12);
+        $tri = $request->input('tri', 'recent');
+match ($tri) {
+    'ancien' => $query->oldest('valide_le'),
+    'titre' => $query->orderBy('titre'),
+    default => $query->latest('valide_le'),
+};
+
+$memoires = $query->paginate(12);
 
         return response()->json($memoires);
     }
@@ -94,6 +105,7 @@ class MemoireController extends Controller
             'encadrant' => 'required|string|max:255',
             'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
             'fichier_preuve' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'cycle' => 'required|in:licence,master',
         ]);
 
         if ($validator->fails()) {
@@ -104,6 +116,31 @@ class MemoireController extends Controller
         }
 
         $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
+        $cheminApercu = null;
+            try {
+                $cheminPdf = Storage::disk('local')->path($cheminMemoire);
+                $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
+                Storage::disk('local')->makeDirectory('apercus');
+                $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
+
+                $resultat = Process::run([
+                    config('app.ghostscript_path'),
+                    '-dNOPAUSE',
+                    '-dBATCH',
+                    '-sDEVICE=jpeg',
+                    '-r100',
+                    '-dFirstPage=1',
+                    '-dLastPage=1',
+                    '-sOutputFile=' . $cheminApercuComplet,
+                    $cheminPdf,
+                ]);
+
+                if ($resultat->successful() && file_exists($cheminApercuComplet)) {
+                    $cheminApercu = $nomApercu;
+                }
+            } catch (\Exception $e) {
+                $cheminApercu = null;
+            }
         $cheminPreuve = $request->file('fichier_preuve')->store('preuves', 'local');
 
         $memoire = Memoire::create([
@@ -117,6 +154,8 @@ class MemoireController extends Controller
             'fichier_memoire' => $cheminMemoire,
             'fichier_preuve' => $cheminPreuve,
             'statut' => 'en_attente',
+            'apercu' => $cheminApercu,
+            'cycle' => $request->cycle,
         ]);
 
         return response()->json([
@@ -314,4 +353,12 @@ class MemoireController extends Controller
             'message' => 'Mémoire supprimé définitivement.',
         ]);
     }
+     public function apercuPublic(Memoire $memoire)
+        {
+            if (!$memoire->estValide() || !$memoire->apercu) {
+                abort(404);
+            }
+
+            return Storage::disk('local')->response($memoire->apercu);
+        }
 }
