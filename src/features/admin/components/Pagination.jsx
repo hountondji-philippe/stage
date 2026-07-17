@@ -1,11 +1,46 @@
-export default function Pagination() {
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+export default function Pagination({ currentPage, totalPages, totalItems, pageSize, onPageChange }) {
+  if (totalItems === 0) return null;
+
+  const debut = (currentPage - 1) * pageSize + 1;
+  const fin = Math.min(currentPage * pageSize, totalItems);
+
   return (
-    <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between">
-      <span className="text-label-sm text-on-surface-variant">Affichage des résultats</span>
+    <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-4">
+      <span className="text-xs font-medium text-gray-500">
+        Affichage {debut}-{fin} sur {totalItems} dépôts
+      </span>
       <div className="flex gap-2">
-        <button className="p-2 rounded-lg border border-outline-variant"><span className="material-symbols-outlined">chevron_left</span></button>
-        <button className="w-10 h-10 rounded-lg bg-primary text-white font-label-md">1</button>
-        <button className="p-2 rounded-lg border border-outline-variant"><span className="material-symbols-outlined">chevron_right</span></button>
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-30"
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          <button
+            key={page}
+            onClick={() => onPageChange(page)}
+            className={`h-9 w-9 rounded-lg text-sm font-bold transition-colors ${
+              page === currentPage
+                ? "bg-[var(--color-primary)] text-white"
+                : "border border-gray-300 text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="rounded-lg border border-gray-300 p-2 text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-30"
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
     </div>
   );

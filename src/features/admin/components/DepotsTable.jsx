@@ -1,25 +1,44 @@
-import DepotRow from './DepotRow';
+import DepotRow from "./DepotRow";
+import DepotCard from "./DepotCard";
 
 export default function DepotsTable({ memoires }) {
+  if (memoires.length === 0) {
+    return (
+      <div className="p-12 text-center text-sm text-gray-500">
+        Aucun dépôt en attente ne correspond à votre recherche.
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-surface-container-lowest rounded-xl border border-outline-variant card-shadow overflow-hidden">
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-surface-container border-b border-outline-variant">
-              <th className="px-6 py-4 font-label-md">Titre du mémoire</th>
-              <th className="px-6 py-4 font-label-md">Auteur</th>
-              <th className="px-6 py-4 font-label-md">Filière</th>
-              <th className="px-6 py-4 font-label-md">Date</th>
-              <th className="px-6 py-4 font-label-md text-center">Statut</th>
-              <th className="px-6 py-4 font-label-md text-right">Action</th>
+    <>
+      {/* Desktop Table */}
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full border-collapse text-left">
+          <thead className="border-b border-gray-200 bg-gray-50">
+            <tr>
+              <th className="p-4 text-sm font-bold text-gray-900">Titre du mémoire</th>
+              <th className="p-4 text-sm font-bold text-gray-900">Auteur</th>
+              <th className="p-4 text-sm font-bold text-gray-900">Filière</th>
+              <th className="p-4 text-sm font-bold text-gray-900">Date</th>
+              <th className="p-4 text-center text-sm font-bold text-gray-900">Statut</th>
+              <th className="p-4 text-right text-sm font-bold text-gray-900">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant">
-            {memoires.map(m => <DepotRow key={m.id} m={m} />)}
+          <tbody className="divide-y divide-gray-100">
+            {memoires.map((m) => (
+              <DepotRow key={m.id} m={m} />
+            ))}
           </tbody>
         </table>
       </div>
-    </div>
+
+      {/* Mobile Cards */}
+      <div className="space-y-4 p-4 md:hidden">
+        {memoires.map((m) => (
+          <DepotCard key={m.id} m={m} />
+        ))}
+      </div>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 import { apiClient } from "../../../lib/apiClient";
+import { extraireTableau } from "../../../lib/apiUtils";
 
-// GET /api/filieres — route à ajouter côté backend
 export async function getFilieres() {
   const { data } = await apiClient.get("/filieres");
-  return data;
+  return extraireTableau(data, "filieres");
 }

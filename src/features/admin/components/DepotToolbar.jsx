@@ -1,16 +1,49 @@
-export default function DepotToolbar() {
+import { Search } from "lucide-react";
+
+export default function DepotToolbar({
+  search,
+  onSearchChange,
+  filiereId,
+  onFiliereChange,
+  filieres,
+  sort,
+  onSortChange,
+}) {
   return (
-    <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant card-shadow mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-      <div className="relative w-full md:w-96 group">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-secondary">search</span>
-        <input className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-outline-variant focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all text-body-md" placeholder="Rechercher par titre ou auteur..." />
+    <div className="mb-6 flex flex-col items-start justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:flex-row md:items-center">
+      <div className="relative w-full md:w-96">
+        <Search
+          size={18}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        />
+        <input
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Rechercher par titre ou auteur..."
+          className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-colors focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15"
+        />
       </div>
-      <div className="flex gap-3 w-full md:w-auto">
-        <select className="flex-1 md:flex-none px-4 py-2.5 bg-surface-container-low rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface outline-none cursor-pointer">
-          <option>Filière: Toutes</option>
+
+      <div className="flex w-full gap-3 md:w-auto">
+        <select
+          value={filiereId}
+          onChange={(e) => onFiliereChange(e.target.value)}
+          className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-600 outline-none focus:border-[var(--color-primary)] md:flex-none"
+        >
+          <option value="">Filière : Toutes</option>
+          {filieres.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.nom}
+            </option>
+          ))}
         </select>
-        <select className="flex-1 md:flex-none px-4 py-2.5 bg-surface-container-low rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface outline-none cursor-pointer">
-          <option>Plus récent</option>
+        <select
+          value={sort}
+          onChange={(e) => onSortChange(e.target.value)}
+          className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-600 outline-none focus:border-[var(--color-primary)] md:flex-none"
+        >
+          <option value="ancien">Plus ancien d'abord</option>
+          <option value="recent">Plus récent</option>
         </select>
       </div>
     </div>

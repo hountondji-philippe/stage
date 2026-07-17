@@ -1,23 +1,31 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, CheckCircle2 } from "lucide-react";
 import EtudiantLayout from "../components/EtudiantLayout";
+import AdminLayout from "../../admin/components/AdminLayout";
 import Stepper from "../components/depot/Stepper";
 import EtapeInformations from "../components/depot/EtapeInformations";
 import EtapeDocuments from "../components/depot/EtapeDocuments";
 import EtapeRecapitulatif from "../components/depot/EtapeRecapitulatif";
+import SelectionAuteur from "../components/depot/SelectionAuteur";
 import Button from "../../../components/ui/Button";
 import { useDepotForm } from "../hooks/useDepotForm";
 import { useFilieres } from "../hooks/useFilieres";
 import { ROUTES } from "../../../router/paths";
 
-export default function DepotMemoirePage() {
+export default function DepotMemoirePage({ mode = "etudiant" }) {
   const navigate = useNavigate();
+  const isAdmin = mode === "admin";
+  const Layout = isAdmin ? AdminLayout : EtudiantLayout;
+
   const { filieres } = useFilieres();
   const {
     isEditMode,
     step,
     data,
     updateData,
+    etudiantAutoriseId,
+    updateEtudiantAutoriseId,
+    authorError,
     files,
     fileErrors,
     handleFileChange,
@@ -32,66 +40,92 @@ export default function DepotMemoirePage() {
     submitting,
     submitError,
     submitted,
-  } = useDepotForm();
+  } = useDepotForm(mode);
 
   const filiereNom = filieres.find((f) => String(f.id) === String(data.filiere_id))?.nom || "";
 
   if (submitted) {
     return (
-      <EtudiantLayout>
+      <Layout>
         <div className="mx-auto flex max-w-[700px] flex-col items-center justify-center rounded-2xl bg-white px-6 py-20 text-center shadow-[0_4px_20px_rgba(19,36,107,0.08)]">
           <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <CheckCircle2 size={32} className="text-green-600" />
           </div>
           <h2 className="mb-2 text-xl font-bold text-[var(--color-primary)]">
-            {isEditMode ? "Dépôt mis à jour avec succès" : "Dépôt envoyé avec succès"}
+            {isAdmin
+              ? "Mémoire ajouté avec succès"
+              : isEditMode
+              ? "Dépôt mis à jour avec succès"
+              : "Dépôt envoyé avec succès"}
           </h2>
           <p className="mb-6 max-w-sm text-sm text-gray-500">
-            Votre mémoire est maintenant en attente de validation par l'administration.
+            {isAdmin
+              ? "Le mémoire a été enregistré pour l'étudiant sélectionné."
+              : "Votre mémoire est maintenant en attente de validation par l'administration."}
           </p>
-          <Button variant="primary" onClick={() => navigate(ROUTES.espaceEtudiant)}>
-            Retour à mes dépôts
+          <Button
+            variant="primary"
+            onClick={() => navigate(isAdmin ? "/admin/tableau-de-bord" : ROUTES.espaceEtudiant)}
+          >
+            {isAdmin ? "Retour au tableau de bord" : "Retour à mes dépôts"}
           </Button>
         </div>
-      </EtudiantLayout>
+      </Layout>
     );
   }
 
   if (loadingInitial) {
     return (
-      <EtudiantLayout>
+      <Layout>
         <div className="rounded-2xl bg-white p-10 text-center text-gray-400 shadow-[0_4px_20px_rgba(19,36,107,0.06)]">
           Chargement du dépôt...
         </div>
-      </EtudiantLayout>
+      </Layout>
     );
   }
 
   return (
-    <EtudiantLayout>
+    <Layout>
       <div className="mx-auto max-w-[700px]">
         <nav className="mb-4 flex items-center gap-2 text-sm text-gray-500">
           <button onClick={handleBreadcrumbClick} className="hover:text-[var(--color-primary)]">
-            Mes dépôts
+            {isAdmin ? "Tableau de bord" : "Mes dépôts"}
           </button>
           <ChevronRight size={14} />
           <span className="font-bold text-[var(--color-primary)]">
-            {isEditMode ? "Modifier le dépôt" : "Nouveau dépôt"}
+            {isAdmin ? "Ajouter un mémoire" : isEditMode ? "Modifier le dépôt" : "Nouveau dépôt"}
           </span>
         </nav>
 
         <header className="mb-8">
           <h1 className="mb-2 text-2xl font-extrabold text-[var(--color-primary)] sm:text-3xl">
-            {isEditMode ? "Modifier votre mémoire" : "Déposer un nouveau mémoire"}
+            {isAdmin
+              ? "Ajouter un mémoire manuellement"
+              : isEditMode
+              ? "Modifier votre mémoire"
+              : "Déposer un nouveau mémoire"}
           </h1>
           <p className="text-gray-500">
-            Remplissez les informations et joignez vos documents pour validation par le jury.
+            {isAdmin
+              ? "Ce formulaire enregistre un mémoire pour un étudiant tiers (dépôt exceptionnel)."
+              : "Remplissez les informations et joignez vos documents pour validation par le jury."}
           </p>
         </header>
 
         <Stepper currentStep={step} />
 
-        {step === 1 && <EtapeInformations data={data} onChange={updateData} onNext={nextStep} />}
+        {step === 1 && (
+          <>
+            {isAdmin && (
+              <SelectionAuteur
+                value={etudiantAutoriseId}
+                onChange={updateEtudiantAutoriseId}
+                error={authorError}
+              />
+            )}
+            <EtapeInformations data={data} onChange={updateData} onNext={nextStep} />
+          </>
+        )}
 
         {step === 2 && (
           <EtapeDocuments
@@ -118,6 +152,6 @@ export default function DepotMemoirePage() {
           />
         )}
       </div>
-    </EtudiantLayout>
+    </Layout>
   );
 }

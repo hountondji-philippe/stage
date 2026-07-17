@@ -1,8 +1,7 @@
 import Button from "../../../../components/ui/Button";
 import { useFilieres } from "../../hooks/useFilieres";
-
-const ANNEES = ["2025-2026", "2024-2025", "2023-2024"];
-
+const ANNEE_COURANTE = new Date().getFullYear();
+const ANNEES = [ANNEE_COURANTE, ANNEE_COURANTE - 1, ANNEE_COURANTE - 2].map(String);
 export default function EtapeInformations({ data, onChange, onNext }) {
   const { filieres, loading: loadingFilieres } = useFilieres();
 

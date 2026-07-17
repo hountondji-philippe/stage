@@ -43,14 +43,27 @@ export async function changerMotDePasse({ mot_de_passe_actuel, mot_de_passe, mot
   return data;
 }
 
-export async function reinitialiserMotDePasse({ token, email, mot_de_passe, mot_de_passe_confirmation }) {
+// ⚠️ Route supposée en convention standard (PUT /api/auth/modifier-email,
+// champ "email") — à ajuster si le nom réel côté Laravel diffère une fois
+// la route codée.
+export async function modifierEmail(email) {
+  const { data } = await apiClient.put("/auth/modifier-email", { email });
+  return data; // { message, user } attendu
+}
+
+export async function demanderReinitialisation(email) {
+  const { data } = await apiClient.post("/auth/mot-de-passe-oublie", { email });
+  return data; // { message } — toujours 200, que l'email existe ou non (sécurité voulue)
+}
+
+export async function reinitialiserMotDePasse({ token, email, password, password_confirmation }) {
   const { data } = await apiClient.post("/auth/reinitialiser-mot-de-passe", {
     token,
     email,
-    mot_de_passe,
-    mot_de_passe_confirmation,
+    password,
+    password_confirmation,
   });
-  return data;
+  return data; // { message }
 }
 
 export const authApi = {
@@ -61,5 +74,7 @@ export const authApi = {
   activerCompte,
   renvoyerLien,
   changerMotDePasse,
+  modifierEmail,
+  demanderReinitialisation,
   reinitialiserMotDePasse,
 };

@@ -8,7 +8,10 @@ export const rejeterMemoire = (id, data) => apiClient.post(`/admin/memoires/${id
 export const supprimerMemoire = (id) => apiClient.delete(`/admin/memoires/${id}`);
 
 // --- Gestion Filières ---
-export const getFiliereList = () => apiClient.get('/admin/filieres');
+// ⚠️ Route::apiResource('/admin/filieres', ...)->except(['index', 'show'])
+// exclut justement l'index côté admin. On utilise la route PUBLIQUE
+// GET /api/filieres (FiliereController::index) pour lister.
+export const getFiliereList = () => apiClient.get('/filieres');
 export const createFiliere = (data) => apiClient.post('/admin/filieres', data);
 export const updateFiliere = (id, data) => apiClient.put(`/admin/filieres/${id}`, data);
 export const deleteFiliere = (id) => apiClient.delete(`/admin/filieres/${id}`);
@@ -21,3 +24,10 @@ export const createSousFiliere = (data) => apiClient.post('/admin/sous-filieres'
 export const getEtudiants = () => apiClient.get('/admin/etudiants-autorises');
 export const addEtudiantAutorise = (data) => apiClient.post('/admin/etudiants-autorises', data);
 export const deleteEtudiant = (id) => apiClient.delete(`/admin/etudiants-autorises/${id}`);
+
+// --- Visionneuse PDF (fichier protégé par token → on fetch en blob) ---
+export const getMemoireFichierBlob = (id, type) =>
+  apiClient.get(`/admin/memoires/${id}/fichier/${type}`, { responseType: "blob" });
+
+// --- Statistiques globales ---
+export const getStats = () => apiClient.get('/admin/stats');

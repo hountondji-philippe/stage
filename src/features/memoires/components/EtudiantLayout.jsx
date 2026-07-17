@@ -17,7 +17,7 @@ import { ROUTES } from "../../../router/paths";
 const NAV_ITEMS = [
   { to: ROUTES.espaceEtudiant, label: "Mes dépôts", icon: FolderOpen },
   { to: ROUTES.depotEtudiant, label: "Nouveau dépôt", icon: FilePlus2 },
-  { to: ROUTES.recherche, label: "Mémoires publics", icon: Globe2 },
+  { to: ROUTES.archive, label: "Mémoires publics", icon: Globe2 },
   { to: ROUTES.profilEtudiant, label: "Mon profil", icon: UserRound },
 ];
 
@@ -80,7 +80,7 @@ export default function EtudiantLayout({ children }) {
         </button>
       </aside>
 
-      <header className="fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 md:left-[280px]">
+      <header className="fixed left-0 right-0 top-0 z-40 flex h-20 items-center justify-between border-b border-gray-200 bg-white px-6 md:left-[280px]">
         <div className="relative w-full max-w-sm">
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -136,7 +136,7 @@ export default function EtudiantLayout({ children }) {
         </div>
       </header>
 
-      <main className="min-h-screen px-4 pb-10 pt-24 md:ml-[280px] md:px-10">{children}</main>
+      <main className="min-h-screen px-4 pb-10 pt-28 md:ml-[280px] md:px-10">{children}</main>
     </div>
   );
 }

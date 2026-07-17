@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { renvoyerLien } from "../api/authApi";
+import { demanderReinitialisation } from "../api/authApi";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,11 +34,12 @@ export function useMotDePasseOublie() {
 
     setLoading(true);
     try {
-      await renvoyerLien(email);
+      await demanderReinitialisation(email);
+      // Le backend répond toujours 200, que l'email existe ou non (sécurité voulue)
       setSent(true);
     } catch (err) {
-      if (err.response?.status === 404 || err.response?.status === 422) {
-        setServerError("Aucun compte n'est associé à cet email. Vérifiez l'adresse saisie.");
+      if (err.response?.status === 422) {
+        setError(err.response.data?.errors?.email?.[0] || "Entrez une adresse email valide.");
       } else if (!err.response) {
         setServerError(
           "Impossible de contacter le serveur. Vérifiez votre connexion ou réessayez plus tard."

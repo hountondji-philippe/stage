@@ -2,22 +2,30 @@ import HeroSection from '../components/HeroSection';
 import SearchSection from '../components/SearchSection';
 import MemoireGrid from '../components/MemoireGrid';
 import ResultHeader from '../components/ResultHeader';
+import Pagination from '../components/Pagination';
 import { useRecherche } from '../hooks/useRecherche';
 
 export default function SearchPage() {
-  const { memoires, filieres, loading, handleSearch } = useRecherche();
+  const { memoires, filieres, meta, activeFilters, loading, handleSearch, goToPage, changeSort } = useRecherche();
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-24 pb-20">
+    <main className="min-h-screen bg-gray-50 pb-20 pt-24">
       <HeroSection />
       <SearchSection onSearch={handleSearch} filieres={filieres} />
 
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <ResultHeader count={memoires.length} />
+      <section className="mx-auto max-w-7xl px-6 py-12">
+        <ResultHeader
+          count={meta?.total ?? memoires.length}
+          sort={activeFilters.tri || "recent"}
+          onSortChange={changeSort}
+        />
         {loading ? (
-          <div className="text-center py-10">Chargement...</div>
+          <div className="py-10 text-center text-gray-400">Chargement...</div>
         ) : (
-          <MemoireGrid memoires={memoires} />
+          <>
+            <MemoireGrid memoires={memoires} />
+            <Pagination meta={meta} onPageChange={goToPage} />
+          </>
         )}
       </section>
     </main>

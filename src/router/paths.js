@@ -17,5 +17,6 @@ export const ROUTES = {
   profilEtudiant: "/etudiant/profil",
 
   espaceAdmin: "/admin/tableau-de-bord",
+  depotsEnAttenteAdmin: "/admin/depots-en-attente",
   etudiantsAutorisesAdmin: "/admin/etudiants-autorises",
 };

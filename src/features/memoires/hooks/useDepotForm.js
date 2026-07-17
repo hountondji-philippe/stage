@@ -1,23 +1,32 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { creerMemoire, modifierMemoire, getMemoireById } from "../api/memoiresApi";
+import { creerMemoire, modifierMemoire, getMemoireById, creerMemoireAdmin } from "../api/memoiresApi";
 import { ROUTES } from "../../../router/paths";
+const ANNEE_COURANTE = new Date().getFullYear().toString();
 
 const INITIAL_DATA = {
   titre: "",
   resume: "",
   filiere_id: "",
-  annee: "2025-2026",
+  annee: ANNEE_COURANTE,
   encadrant: "",
 };
 
-export function useDepotForm() {
+/**
+ * @param {"etudiant"|"admin"} mode - "etudiant" : dépôt par soi-même (peut
+ * éditer un dépôt existant). "admin" : ajout manuel pour un étudiant tiers
+ * (création uniquement, pas d'édition, champ auteur obligatoire).
+ */
+export function useDepotForm(mode = "etudiant") {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEditMode = Boolean(id);
+  const isAdmin = mode === "admin";
+  const isEditMode = !isAdmin && Boolean(id);
 
   const [step, setStep] = useState(1);
   const [data, setData] = useState(INITIAL_DATA);
+  const [etudiantAutoriseId, setEtudiantAutoriseId] = useState("");
+  const [authorError, setAuthorError] = useState("");
   const [files, setFiles] = useState({ memoire: null, preuve: null });
   const [fileErrors, setFileErrors] = useState({ memoire: null, preuve: null });
   const [certifie, setCertifie] = useState(false);
@@ -28,7 +37,7 @@ export function useDepotForm() {
   const [submitted, setSubmitted] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  // Mode modification : précharge les données existantes
+  // Mode modification (étudiant uniquement) : précharge les données existantes
   useEffect(() => {
     if (!isEditMode) return;
     let mounted = true;
@@ -65,6 +74,12 @@ export function useDepotForm() {
     setDirty(true);
   }
 
+  function updateEtudiantAutoriseId(value) {
+    setEtudiantAutoriseId(value);
+    setAuthorError("");
+    setDirty(true);
+  }
+
   function handleFileChange(key, file, error) {
     setFiles((f) => ({ ...f, [key]: file }));
     setFileErrors((e) => ({ ...e, [key]: error }));
@@ -72,7 +87,16 @@ export function useDepotForm() {
   }
 
   const goToStep = useCallback((target) => setStep(target), []);
-  const nextStep = useCallback(() => setStep((s) => Math.min(s + 1, 3)), []);
+
+  function nextStep() {
+    // En mode admin, on bloque le passage à l'étape suivante tant que
+    // l'auteur n'est pas sélectionné (dès l'étape 1 "Informations").
+    if (isAdmin && step === 1 && !etudiantAutoriseId) {
+      setAuthorError("Sélectionnez l'étudiant auteur avant de continuer.");
+      return;
+    }
+    setStep((s) => Math.min(s + 1, 3));
+  }
   const prevStep = useCallback(() => setStep((s) => Math.max(s - 1, 1)), []);
 
   function handleBreadcrumbClick() {
@@ -80,7 +104,7 @@ export function useDepotForm() {
       const confirmLeave = confirm("Des modifications non enregistrées seront perdues. Continuer ?");
       if (!confirmLeave) return;
     }
-    navigate(ROUTES.espaceEtudiant);
+    navigate(isAdmin ? "/admin/tableau-de-bord" : ROUTES.espaceEtudiant);
   }
 
   async function handleSubmit() {
@@ -94,6 +118,10 @@ export function useDepotForm() {
       formData.append("annee", data.annee);
       formData.append("encadrant", data.encadrant);
 
+      if (isAdmin) {
+        formData.append("etudiant_autorise_id", etudiantAutoriseId);
+      }
+
       // On n'envoie le fichier que s'il a été (re)sélectionné —
       // en mode modification, un fichier "existing" reste tel quel côté serveur.
       if (files.memoire && !files.memoire.existing) {
@@ -103,7 +131,9 @@ export function useDepotForm() {
         formData.append("fichier_preuve", files.preuve);
       }
 
-      if (isEditMode) {
+      if (isAdmin) {
+        await creerMemoireAdmin(formData);
+      } else if (isEditMode) {
         await modifierMemoire(id, formData);
       } else {
         await creerMemoire(formData);
@@ -118,9 +148,13 @@ export function useDepotForm() {
 
   return {
     isEditMode,
+    isAdmin,
     step,
     data,
     updateData,
+    etudiantAutoriseId,
+    updateEtudiantAutoriseId,
+    authorError,
     files,
     fileErrors,
     handleFileChange,

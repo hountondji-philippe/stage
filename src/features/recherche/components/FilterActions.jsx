@@ -1,20 +1,22 @@
+import { CheckCircle2, RotateCcw } from "lucide-react";
+
 export default function FilterActions({ onApply, onReset }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-stack-md">
+    <div className="flex flex-col gap-4 sm:flex-row">
       <button
         type="button"
         onClick={onApply}
-        className="flex-1 flex items-center justify-center gap-2 py-3 bg-status-valide text-white rounded-lg font-bold hover:opacity-90 transition-opacity"
+        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--color-status-valide)] py-3 font-bold text-white transition-opacity hover:opacity-90"
       >
-        <span className="material-symbols-outlined">check_circle</span>
+        <CheckCircle2 size={20} />
         <span>Appliquer les filtres</span>
       </button>
       <button
         type="button"
         onClick={onReset}
-        className="flex-1 flex items-center justify-center gap-2 py-3 bg-surface-container text-on-surface-variant rounded-lg font-bold hover:bg-outline-variant/20 transition-colors"
+        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-100 py-3 font-bold text-gray-600 transition-colors hover:bg-gray-200"
       >
-        <span className="material-symbols-outlined">restart_alt</span>
+        <RotateCcw size={20} />
         <span>Réinitialiser</span>
       </button>
     </div>

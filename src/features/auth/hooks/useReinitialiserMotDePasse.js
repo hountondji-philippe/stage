@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { reinitialiserMotDePasse } from "../api/authApi";
 import { ROUTES } from "../../../router/paths";
 
 export function useReinitialiserMotDePasse() {
   const navigate = useNavigate();
+  const { token: tokenParam } = useParams();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token") || "";
+  const token = tokenParam || "";
   const email = searchParams.get("email") || "";
 
   const [form, setForm] = useState({ motDePasse: "", motDePasseConfirmation: "" });
@@ -14,6 +15,7 @@ export function useReinitialiserMotDePasse() {
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [tokenInvalide, setTokenInvalide] = useState(false);
 
   function updateField(name, value) {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -34,6 +36,12 @@ export function useReinitialiserMotDePasse() {
     return Object.keys(nextErrors).length === 0;
   }
 
+  useEffect(() => {
+    if (!success) return;
+    const timeout = setTimeout(() => navigate(ROUTES.connexionEtudiant), 3000);
+    return () => clearTimeout(timeout);
+  }, [success, navigate]);
+
   async function submit(e) {
     e.preventDefault();
     setServerError("");
@@ -44,16 +52,23 @@ export function useReinitialiserMotDePasse() {
       await reinitialiserMotDePasse({
         token,
         email,
-        mot_de_passe: form.motDePasse,
-        mot_de_passe_confirmation: form.motDePasseConfirmation,
+        password: form.motDePasse,
+        password_confirmation: form.motDePasseConfirmation,
       });
       setSuccess(true);
-      setTimeout(() => navigate(ROUTES.connexionEtudiant), 3000);
     } catch (err) {
-      if (err.response?.status === 422) {
-        setServerError(
-          "Ce lien n'est plus valide ou a expiré. Demandez un nouveau lien de réinitialisation."
-        );
+      const status = err.response?.status;
+      if (status === 404 || status === 410) {
+        setTokenInvalide(true);
+      } else if (status === 422) {
+        const data = err.response.data;
+        const champErreurs = {};
+        if (data?.errors?.password) champErreurs.motDePasse = data.errors.password[0];
+        if (data?.errors?.password_confirmation) {
+          champErreurs.motDePasseConfirmation = data.errors.password_confirmation[0];
+        }
+        if (Object.keys(champErreurs).length > 0) setErrors(champErreurs);
+        else setServerError(data?.message || "Données invalides.");
       } else {
         setServerError("Une erreur est survenue. Merci de réessayer.");
       }
@@ -64,7 +79,7 @@ export function useReinitialiserMotDePasse() {
 
   return {
     email,
-    tokenPresent: Boolean(token) && Boolean(email),
+    tokenPresent: Boolean(token) && Boolean(email) && !tokenInvalide,
     form,
     updateField,
     errors,
