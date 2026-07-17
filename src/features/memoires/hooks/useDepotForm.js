@@ -8,6 +8,7 @@ const INITIAL_DATA = {
   titre: "",
   resume: "",
   filiere_id: "",
+  cycle: "",
   annee: ANNEE_COURANTE,
   encadrant: "",
 };
@@ -49,6 +50,7 @@ export function useDepotForm(mode = "etudiant") {
           titre: memoire.titre || "",
           resume: memoire.resume || "",
           filiere_id: memoire.filiere_id || "",
+          cycle: memoire.cycle || "",
           annee: memoire.annee || INITIAL_DATA.annee,
           encadrant: memoire.encadrant || "",
         });
@@ -115,6 +117,7 @@ export function useDepotForm(mode = "etudiant") {
       formData.append("titre", data.titre);
       formData.append("resume", data.resume);
       formData.append("filiere_id", data.filiere_id);
+      formData.append("cycle", data.cycle);
       formData.append("annee", data.annee);
       formData.append("encadrant", data.encadrant);
 

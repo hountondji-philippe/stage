@@ -4,7 +4,10 @@ import { useSousFilieres } from "../../hooks/useSousFilieres";
 
 const ANNEE_COURANTE = new Date().getFullYear();
 const ANNEES = [ANNEE_COURANTE, ANNEE_COURANTE - 1, ANNEE_COURANTE - 2].map(String);
-
+const CYCLES = [
+  { value: "licence", label: "Licence" },
+  { value: "master", label: "Master" },
+];
 export default function EtapeInformations({ data, onChange, onNext }) {
   const { filieres, loading: loadingFilieres } = useFilieres();
   const { sousFilieres, loading: loadingSousFilieres } = useSousFilieres(data.filiere_id);
@@ -28,6 +31,7 @@ export default function EtapeInformations({ data, onChange, onNext }) {
     data.titre?.trim() &&
       data.resume?.trim() &&
       data.filiere_id &&
+      data.cycle &&
       data.annee &&
       data.encadrant?.trim() &&
       (!aDesSousFilieres || data.sous_filiere_id)
@@ -64,7 +68,7 @@ export default function EtapeInformations({ data, onChange, onNext }) {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-[var(--color-text)]">Filière</label>
             <select
@@ -84,6 +88,25 @@ export default function EtapeInformations({ data, onChange, onNext }) {
               ))}
             </select>
           </div>
+
+          <div className="flex flex-col gap-2">
+  <label className="text-sm font-medium text-[var(--color-text)]">Cycle</label>
+  <select
+    name="cycle"
+    value={data.cycle || ""}
+    onChange={handleField}
+    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-[var(--color-primary-light)] focus:ring-2 focus:ring-[var(--color-primary-light)]/40"
+  >
+    <option value="" disabled>
+      Choisir un cycle
+    </option>
+    {CYCLES.map((c) => (
+      <option key={c.value} value={c.value}>
+        {c.label}
+      </option>
+    ))}
+  </select>
+</div>
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-[var(--color-text)]">Année académique</label>

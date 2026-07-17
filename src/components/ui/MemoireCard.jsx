@@ -12,6 +12,9 @@ export function MemoireCard({ memoire }) {
   ? `${memoire.user.etudiant_autorise.prenom} ${memoire.user.etudiant_autorise.nom}`
   : "Auteur inconnu";
   const afficherApercu = Boolean(memoire.apercu) && !imageEnErreur;
+ // 👇 Ajoute ceci
+  console.log("URL de l'image :", `${apiClient.defaults.baseURL}/memoires/${memoire.id}/apercu`);
+  console.log("Mémoire :", memoire);
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
