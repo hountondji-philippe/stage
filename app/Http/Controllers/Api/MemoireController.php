@@ -109,6 +109,28 @@ $memoires = $query->paginate(12);
     return Storage::disk('local')->response($chemin);
 }
 
+  public function monTelechargement(Request $request, Memoire $memoire, string $type)
+{
+    if ($memoire->user_id !== $request->user()->id) {
+        abort(403);
+    }
+
+    $chemin = match ($type) {
+        'memoire' => $memoire->fichier_memoire,
+        'preuve' => $memoire->fichier_preuve,
+        default => abort(404),
+    };
+
+    if (!$chemin) {
+        abort(404);
+    }
+
+    return Storage::disk('local')->download(
+        $chemin,
+        Str::slug($memoire->titre) . '-' . $type . '.pdf'
+    );
+}
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -179,55 +201,137 @@ $memoires = $query->paginate(12);
         ], 201);
     }
 
-    public function update(Request $request, Memoire $memoire)
-    {
-        if ($memoire->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Action non autorisée.'], 403);
-        }
 
-        if (!$memoire->estEnAttente()) {
-            return response()->json([
-                'message' => 'Seul un mémoire en attente peut être modifié.',
-            ], 409);
-        }
+    public function storeAdmin(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'titre' => 'required|string|max:255',
+        'resume' => 'required|string',
+        'filiere_id' => 'required|exists:filieres,id',
+        'sous_filiere_id' => 'nullable|exists:sous_filieres,id',
+        'annee' => 'required|string|max:4',
+        'encadrant' => 'required|string|max:255',
+        'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
+        'fichier_preuve' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'cycle' => 'required|in:licence,master',
+    ]);
 
-        $validator = Validator::make($request->all(), [
-            'titre' => 'sometimes|string|max:255',
-            'resume' => 'sometimes|string',
-            'filiere_id' => 'sometimes|exists:filieres,id',
-            'sous_filiere_id' => 'sometimes|nullable|exists:sous_filieres,id',
-            'annee' => 'sometimes|string|max:4',
-            'encadrant' => 'sometimes|string|max:255',
-            'fichier_memoire' => 'sometimes|file|mimes:pdf|max:10240',
-            'fichier_preuve' => 'sometimes|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Données invalides.',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $donnees = $request->only(['titre', 'resume', 'filiere_id', 'sous_filiere_id', 'annee', 'encadrant']);
-
-        if ($request->hasFile('fichier_memoire')) {
-            Storage::disk('local')->delete($memoire->fichier_memoire);
-            $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 'local');
-        }
-
-        if ($request->hasFile('fichier_preuve')) {
-            Storage::disk('local')->delete($memoire->fichier_preuve);
-            $donnees['fichier_preuve'] = $request->file('fichier_preuve')->store('preuves', 'local');
-        }
-
-        $memoire->update($donnees);
-
+    if ($validator->fails()) {
         return response()->json([
-            'message' => 'Mémoire mis à jour avec succès.',
-            'memoire' => $memoire,
-        ]);
+            'message' => 'Données invalides.',
+            'errors' => $validator->errors(),
+        ], 422);
     }
+
+    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
+    $cheminApercu = null;
+    try {
+        $cheminPdf = Storage::disk('local')->path($cheminMemoire);
+        $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
+        Storage::disk('local')->makeDirectory('apercus');
+        $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
+
+        $resultat = Process::run([
+            config('app.ghostscript_path'),
+            '-dNOPAUSE', '-dBATCH', '-sDEVICE=jpeg', '-r100',
+            '-dFirstPage=1', '-dLastPage=1',
+            '-sOutputFile=' . $cheminApercuComplet,
+            $cheminPdf,
+        ]);
+
+        if ($resultat->successful() && file_exists($cheminApercuComplet)) {
+            $cheminApercu = $nomApercu;
+        }
+    } catch (\Exception $e) {
+        $cheminApercu = null;
+    }
+
+    $cheminPreuve = $request->file('fichier_preuve')->store('preuves', 'local');
+
+    $memoire = Memoire::create([
+        'user_id' => $request->user()->id,
+        'titre' => $request->titre,
+        'resume' => $request->resume,
+        'filiere_id' => $request->filiere_id,
+        'sous_filiere_id' => $request->sous_filiere_id,
+        'annee' => $request->annee,
+        'encadrant' => $request->encadrant,
+        'fichier_memoire' => $cheminMemoire,
+        'fichier_preuve' => $cheminPreuve,
+        'statut' => 'valide',
+        'apercu' => $cheminApercu,
+        'cycle' => $request->cycle,
+        'valide_par' => $request->user()->id,
+        'valide_le' => now(),
+    ]);
+
+    return response()->json([
+        'message' => 'Mémoire ajouté et publié avec succès.',
+        'memoire' => $memoire,
+    ], 201);
+}
+
+
+public function update(Request $request, Memoire $memoire)
+{
+    if ($memoire->user_id !== $request->user()->id) {
+        return response()->json(['message' => 'Action non autorisée.'], 403);
+    }
+
+    if ($memoire->estValide()) {
+        return response()->json([
+            'message' => 'Un mémoire déjà validé ne peut plus être modifié.',
+        ], 409);
+    }
+
+    $validator = Validator::make($request->all(), [
+        'titre' => 'sometimes|string|max:255',
+        'resume' => 'sometimes|string',
+        'filiere_id' => 'sometimes|exists:filieres,id',
+        'sous_filiere_id' => 'sometimes|nullable|exists:sous_filieres,id',
+        'annee' => 'sometimes|string|max:4',
+        'cycle' => 'sometimes|in:licence,master',
+        'encadrant' => 'sometimes|string|max:255',
+        'fichier_memoire' => 'sometimes|file|mimes:pdf|max:10240',
+        'fichier_preuve' => 'sometimes|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Données invalides.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $donnees = $request->only(['titre', 'resume', 'filiere_id', 'sous_filiere_id', 'annee', 'cycle', 'encadrant']);
+
+    if ($request->hasFile('fichier_memoire')) {
+        Storage::disk('local')->delete($memoire->fichier_memoire);
+        $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 'local');
+    }
+
+    if ($request->hasFile('fichier_preuve')) {
+        Storage::disk('local')->delete($memoire->fichier_preuve);
+        $donnees['fichier_preuve'] = $request->file('fichier_preuve')->store('preuves', 'local');
+    }
+
+    // Si le mémoire était rejeté, la correction le renvoie en attente de validation
+    if ($memoire->statut === 'rejete') {
+        $donnees['statut'] = 'en_attente';
+        $donnees['motif_rejet'] = null;
+        $donnees['valide_par'] = null;
+        $donnees['valide_le'] = null;
+    }
+
+    $memoire->update($donnees);
+
+    return response()->json([
+        'message' => $memoire->statut === 'en_attente' && $memoire->wasChanged('statut')
+            ? 'Mémoire corrigé et renvoyé pour validation.'
+            : 'Mémoire mis à jour avec succès.',
+        'memoire' => $memoire,
+    ]);
+}
 
     public function destroy(Request $request, Memoire $memoire)
     {

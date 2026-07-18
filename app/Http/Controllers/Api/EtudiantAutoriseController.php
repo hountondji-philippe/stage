@@ -19,9 +19,13 @@ class EtudiantAutoriseController extends Controller
             $query->where('filiere_id', $request->filiere_id);
         }
 
-        if ($request->filled('promo')) {
-            $query->where('promo', $request->promo);
-        }
+        if ($request->filled('annee_scolaire')) {
+    $query->where('annee_scolaire', $request->annee_scolaire);
+    }
+
+         if ($request->filled('compte_active')) {
+        $query->where('compte_active', $request->boolean('compte_active'));
+    }
 
         if ($request->filled('recherche')) {
             $terme = $request->recherche;
@@ -80,7 +84,7 @@ class EtudiantAutoriseController extends Controller
                     'nom' => 'sometimes|string|max:255',
                     'prenom' => 'sometimes|string|max:255',
                     'filiere_id' => 'sometimes|exists:filieres,id',
-                    'promo' => 'sometimes|string|max:9',
+                    'annee_scolaire' => 'sometimes|string|max:9',
                     'niveau' => 'sometimes|in:L1,L2,L3,M1,M2',
                 ]);
 
