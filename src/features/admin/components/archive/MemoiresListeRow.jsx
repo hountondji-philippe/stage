@@ -1,6 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import StatusBadge from "../../../components/ui/StatusBadge";
+import StatusBadge from "../../../../components/ui/StatusBadge";
 
 function nomAuteur(m) {
   const etudiant = m.user?.etudiantAutorise ?? m.user?.etudiant_autorise;

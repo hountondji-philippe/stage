@@ -6,6 +6,7 @@ import RouteProtegee from "./RouteProtegee";
 import PublicLayout from "../components/layout/PublicLayout";
 import ProfilEtudiantPage from "../features/etudiant/pages/ProfilEtudiantPage";
 import DepotMemoirePage from "../features/memoires/pages/DepotMemoirePage";
+import DetailDepotPage from "../features/memoires/pages/DetailDepotPage";
 // Pages
 import EtudiantsAutorisesPage from "../features/admin/pages/EtudiantsAutorisesPage";
 import DashboardAdminPage from "../features/admin/pages/DashboardAdminPage";
@@ -24,6 +25,7 @@ import ProfilAdminPage from "../features/admin/pages/ProfilAdminPage";
 import MemoireDetailPage from "../features/recherche/pages/MemoireDetailPage";
 import MemoiresListePage from "../features/admin/pages/MemoiresListePage";
 import ListeFilierePage from "../features/admin/pages/ListeFilierePage";
+import MesDepotsPage from "../features/memoires/pages/MesDepotsPage";
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -31,7 +33,7 @@ export default function AppRouter() {
         {/* --- Espace AVEC Header et Footer --- */}
         <Route element={<PublicLayout />}>
           <Route path={ROUTES.accueil} element={<AccueilPage />} />
-                  <Route path="/memoires/:id" element={<MemoireDetailPage />} />
+          <Route path="/memoires/:id" element={<MemoireDetailPage />} />
           <Route path={ROUTES.archive} element={<SearchPage />} />
         </Route>
 
@@ -42,6 +44,7 @@ export default function AppRouter() {
         <Route path="/reinitialiser-mot-de-passe/:token" element={<ReinitialiserMotDePassePage />} />
         <Route path={ROUTES.connexionEtudiant} element={<ConnexionEtudiantPage />} />
         <Route path={ROUTES.connexionAdmin} element={<ConnexionAdminPage />} />
+
         <Route
           path={ROUTES.espaceAdmin}
           element={
@@ -50,23 +53,31 @@ export default function AppRouter() {
             </RouteProtegee>
           }
         />
-        <Route path="/admin/depots-en-attente" element={<DepotsPage />} />
-<Route
-  path="/admin/depots-en-attente"
-  element={
-    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
-      <DepotsPage />
-    </RouteProtegee>
-  }
-/>
-<Route
-  path={ROUTES.etudiantsAutorisesAdmin}
-  element={
-    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
-      <EtudiantsAutorisesPage />
-    </RouteProtegee>
-  }
-/>
+
+        <Route
+          path={ROUTES.mesDepots}
+          element={
+            <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
+              <MesDepotsPage />
+            </RouteProtegee>
+          }
+        />
+        <Route
+          path="/admin/depots-en-attente"
+          element={
+            <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+              <DepotsPage />
+            </RouteProtegee>
+          }
+        />
+        <Route
+          path={ROUTES.etudiantsAutorisesAdmin}
+          element={
+            <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+              <EtudiantsAutorisesPage />
+            </RouteProtegee>
+          }
+        />
 
         <Route
           path={ROUTES.espaceEtudiant}
@@ -77,75 +88,80 @@ export default function AppRouter() {
           }
         />
 
+        <Route
+          path={ROUTES.depotEtudiant}
+          element={
+            <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
+              <DepotMemoirePage />
+            </RouteProtegee>
+          }
+        />
+        <Route
+          path={ROUTES.depotEtudiantModifier(":id")}
+          element={
+            <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
+              <DepotMemoirePage />
+            </RouteProtegee>
+          }
+        />
+        <Route
+          path={ROUTES.memoireDetailEtudiant(":id")}
+          element={
+            <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
+              <DetailDepotPage />
+            </RouteProtegee>
+          }
+        />
 
         <Route
-  path={ROUTES.depotEtudiant}
-  element={
-    <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
-      <DepotMemoirePage />
-    </RouteProtegee>
-  }
-/>
-<Route
-  path={ROUTES.depotEtudiantModifier(":id")}
-  element={
-    <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
-      <DepotMemoirePage />
-    </RouteProtegee>
-  }
-/>
+          path={ROUTES.profilEtudiant}
+          element={
+            <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
+              <ProfilEtudiantPage />
+            </RouteProtegee>
+          }
+        />
 
         <Route
-  path={ROUTES.profilEtudiant}
-  element={
-    <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
-      <ProfilEtudiantPage />
-    </RouteProtegee>
-  }
-/>
-
-<Route
-  path="/admin/memoires/:id"
-  element={
-    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
-      <DepotDetailPage />
-    </RouteProtegee>
-  }
-/>
-
-<Route
-  path="/admin/memoires/ajouter"
-  element={
-    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
-      <DepotMemoirePage mode="admin" />
-    </RouteProtegee>
-  }
-/>
-<Route
-  path="/admin/filieres"
-  element={
-    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
-      <ListeFilierePage />
-    </RouteProtegee>
-  }
-/>
-<Route
-  path="/admin/memoires"
-  element={
-    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
-      <MemoiresListePage />
-    </RouteProtegee>
-  }
-/>
-
-<Route
-  path="/admin/profil"
-  element={
-    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
-      <ProfilAdminPage />
-    </RouteProtegee>
-  }
-/>
+          path={ROUTES.memoireDetailAdmin(":id")}
+          element={
+            <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+              <DepotDetailPage />
+            </RouteProtegee>
+          }
+        />
+        <Route
+          path="/admin/memoires/ajouter"
+          element={
+            <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+              <DepotMemoirePage mode="admin" />
+            </RouteProtegee>
+          }
+        />
+        <Route
+          path="/admin/filieres"
+          element={
+            <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+              <ListeFilierePage />
+            </RouteProtegee>
+          }
+        />
+        <Route
+          path={ROUTES.memoiresListeAdmin}
+          element={
+            <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+              <MemoiresListePage />
+            </RouteProtegee>
+          }
+        />
+        <Route
+          path="/admin/profil"
+          element={
+            <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+              <ProfilAdminPage />
+            </RouteProtegee>
+          }
+        />
 
         {/* Page 404 (doit toujours être en dernier) */}
         <Route path="*" element={<div className="p-10 text-center">Page introuvable (404)</div>} />

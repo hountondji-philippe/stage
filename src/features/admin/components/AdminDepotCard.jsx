@@ -1,27 +1,38 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MoreVertical, Trash2, Eye } from "lucide-react";
+import { AlertTriangle, MoreVertical, Trash2, Eye } from "lucide-react";
 import Button from "../../../components/ui/Button";
-import StatusBadge from "../../../components/ui/StatusBadge";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { ROUTES } from "../../../router/paths";
 
-function nomAuteur(m) {
-  const etudiant = m.user?.etudiantAutorise ?? m.user?.etudiant_autorise;
-  return etudiant ? `${etudiant.nom} ${etudiant.prenom}` : m.user?.email ?? "—";
+function estUrgent(createdAt) {
+  if (!createdAt) return false;
+  const joursEcoules = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
+  return joursEcoules > 15;
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(dateStr).toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-export default function MemoiresListeCard({ m, onDeleteClick }) {
+export default function AdminDepotCard({ memoire, onDelete }) {
   const navigate = useNavigate();
+  const { id, titre, created_at, filiere } = memoire;
+  const urgent = estUrgent(created_at);
+  const etudiant = memoire.user?.etudiantAutorise ?? memoire.user?.etudiant_autorise;
+  const nomComplet = etudiant ? `${etudiant.nom} ${etudiant.prenom}` : memoire.user?.email ?? "—";
+
   const [menuOuvert, setMenuOuvert] = useState(false);
+  const [confirmationOuverte, setConfirmationOuverte] = useState(false);
   const menuRef = useRef(null);
-  const enAttente = m.statut === "en_attente";
 
   function handleVoirDetail() {
-    navigate(`/admin/memoires/${m.id}`, { state: { memoire: m } });
+    navigate(ROUTES.memoireDetailAdmin(id));
   }
 
   useEffect(() => {
@@ -35,47 +46,54 @@ export default function MemoiresListeCard({ m, onDeleteClick }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOuvert]);
 
+  function handleDemanderSuppression() {
+    setMenuOuvert(false);
+    setConfirmationOuverte(true);
+  }
+
+  function handleConfirmerSuppression() {
+    setConfirmationOuverte(false);
+    onDelete?.(id);
+  }
+
   function handleConsulterDepuisMenu() {
     setMenuOuvert(false);
     handleVoirDetail();
-  }
-
-  function handleSupprimer() {
-    setMenuOuvert(false);
-    onDeleteClick(m);
   }
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border-l-4 border-l-[var(--color-primary)] bg-white p-6 shadow-[0_4px_20px_rgba(19,36,107,0.06)] sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
         <div className="mb-2 flex items-center gap-3">
-          <StatusBadge status={m.statut} />
-          <span className="text-xs text-gray-400">Déposé le {formatDate(m.created_at)}</span>
+          <span className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
+            En attente
+          </span>
+          {urgent && (
+            <span className="flex items-center gap-1.5 rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-600">
+              <AlertTriangle size={12} />
+              Urgent (&gt; 15 jours)
+            </span>
+          )}
+          <span className="text-xs text-gray-400">Déposé le {formatDate(created_at)}</span>
         </div>
 
         <button
           onClick={handleVoirDetail}
           className="text-left text-lg font-bold text-[var(--color-primary)] hover:underline"
         >
-          {m.titre}
+          {titre}
         </button>
 
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-500">
-          <span>{nomAuteur(m)}</span>
-          {m.filiere?.nom && <span>• {m.filiere.nom}</span>}
+          <span>{nomComplet}</span>
+          {filiere?.nom && <span>• {filiere.nom}</span>}
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {enAttente ? (
-          <Button variant="primary" onClick={handleVoirDetail}>
-            Examiner
-          </Button>
-        ) : (
-          <Button variant="outline" onClick={handleVoirDetail}>
-            Consulter
-          </Button>
-        )}
+        <Button variant="primary" onClick={handleVoirDetail}>
+          Examiner le dossier
+        </Button>
 
         <div className="relative" ref={menuRef}>
           <button
@@ -95,7 +113,7 @@ export default function MemoiresListeCard({ m, onDeleteClick }) {
                 Consulter
               </button>
               <button
-                onClick={handleSupprimer}
+                onClick={handleDemanderSuppression}
                 className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
               >
                 <Trash2 size={16} />
@@ -105,6 +123,16 @@ export default function MemoiresListeCard({ m, onDeleteClick }) {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmationOuverte}
+        titre="Supprimer ce dépôt ?"
+        message={`Cette action est irréversible. "${titre}" sera définitivement supprimé.`}
+        labelConfirmer="Supprimer"
+        onConfirm={handleConfirmerSuppression}
+        onCancel={() => setConfirmationOuverte(false)}
+        danger
+      />
     </div>
   );
 }

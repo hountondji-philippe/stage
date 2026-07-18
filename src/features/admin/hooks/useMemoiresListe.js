@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { getAllMemoires, supprimerMemoire } from "../api/adminService";
 
 export function useMemoiresListe() {
+  const location = useLocation();
   const [memoires, setMemoires] = useState([]);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0, per_page: 15 });
-  const [statut, setStatut] = useState(""); // "" | "en_attente" | "valide" | "rejete"
+  // --- AJOUT : démarre sur l'onglet demandé si on arrive via navigate(..., { state: { statutInitial } }) ---
+  const [statut, setStatut] = useState(location.state?.statutInitial ?? "");
+  // --- FIN AJOUT ---
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -32,7 +36,6 @@ export function useMemoiresListe() {
     fetchMemoires();
   }, [fetchMemoires]);
 
-  // Repart à la page 1 dès qu'on change le filtre statut
   function updateStatut(value) {
     setStatut(value);
     setPage(1);

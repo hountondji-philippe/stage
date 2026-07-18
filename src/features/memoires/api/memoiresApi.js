@@ -19,10 +19,18 @@ export async function getMesMemoires() {
   return extraireTableau(data);
 }
 
-// GET /api/memoires/{id} — route à ajouter côté backend
+// GET /api/memoires/{id} — réutilise mes-memoires (déjà scopé à l'utilisateur
+// connecté côté backend, pas de route GET /memoires/{id} dédiée)
 export async function getMemoireById(id) {
-  const { data } = await apiClient.get(`/memoires/${id}`);
-  return data?.data ?? data;
+  const { data } = await apiClient.get("/memoires/mes-memoires");
+  const liste = extraireTableau(data);
+  const memoire = liste.find((m) => String(m.id) === String(id));
+
+  if (!memoire) {
+    throw new Error("Mémoire introuvable ou non autorisé.");
+  }
+
+  return memoire;
 }
 
 // POST /api/memoires (dépôt par l'étudiant connecté lui-même)
@@ -33,7 +41,7 @@ export async function creerMemoire(formData) {
   return data?.data ?? data;
 }
 
-// PUT /api/memoires/{id} — route à ajouter côté backend
+// PUT /api/memoires/{id}
 export async function modifierMemoire(id, formData) {
   formData.append("_method", "PUT");
   const { data } = await apiClient.post(`/memoires/${id}`, formData, {
@@ -50,4 +58,28 @@ export async function creerMemoireAdmin(formData) {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data?.data ?? data;
+}
+
+
+// GET /mes-memoires/{id}/fichier/{type} — récupère le fichier en blob (auth via header, pas cookie)
+export async function getFichierBlobUrl(memoireId, type) {
+  const { data } = await apiClient.get(`/mes-memoires/${memoireId}/fichier/${type}`, {
+    responseType: "blob",
+  });
+  return URL.createObjectURL(data);
+}
+
+// GET /mes-memoires/{id}/telecharger/{type} — déclenche un vrai téléchargement
+export async function telechargerFichierAuthentifie(memoireId, type, nomFichier) {
+  const { data } = await apiClient.get(`/mes-memoires/${memoireId}/telecharger/${type}`, {
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomFichier || `${type}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

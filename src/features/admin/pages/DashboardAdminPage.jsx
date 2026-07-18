@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, XCircle, FolderOpen } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import StatCard from "../components/StatCard";
@@ -8,8 +9,9 @@ import ActivityTimeline from "../components/ActivityTimeline";
 import { useAdminStats } from "../hooks/useAdminStats";
 import { useActiviteRecente } from "../hooks/useActiviteRecente";
 import { getMemoiresEnAttente } from "../api/adminService";
-
+import { ROUTES } from "../../../router/paths";
 export default function DashboardAdminPage() {
+  const navigate = useNavigate();
   const { stats, loading: statsLoading } = useAdminStats();
   const { activites, loading: activitesLoading } = useActiviteRecente(6);
   const [depotsRecents, setDepotsRecents] = useState([]);
@@ -41,33 +43,33 @@ export default function DashboardAdminPage() {
         {/* 4 cartes stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="En attente"
-            value={statsLoading ? "…" : stats.en_attente}
-            icon={AlertTriangle}
-            colorClass="border-orange-400"
-            iconBgClass="bg-orange-100 text-orange-600"
-          />
-          <StatCard
-            label="Validés"
-            value={statsLoading ? "…" : stats.valide}
-            icon={CheckCircle2}
-            colorClass="border-green-500"
-            iconBgClass="bg-green-100 text-green-600"
-          />
-          <StatCard
-            label="Rejetés"
-            value={statsLoading ? "…" : stats.rejete}
-            icon={XCircle}
-            colorClass="border-red-500"
-            iconBgClass="bg-red-100 text-red-600"
-          />
-          <StatCard
-            label="Total des dépôts"
-            value={statsLoading ? "…" : stats.total}
-            icon={FolderOpen}
-            colorClass="border-[var(--color-primary)]"
-            iconBgClass="bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-          />
+  label="En attente"
+  value={statsLoading ? "…" : stats.en_attente}
+  icon={AlertTriangle}
+  accentColor="#F5B800"
+  onClick={() => navigate(ROUTES.depotsEnAttenteAdmin)}
+/>
+<StatCard
+  label="Validés"
+  value={statsLoading ? "…" : stats.valide}
+  icon={CheckCircle2}
+  accentColor="#4ADE80"
+  onClick={() => navigate(ROUTES.memoiresListeAdmin, { state: { statutInitial: "valide" } })}
+/>
+<StatCard
+  label="Rejetés"
+  value={statsLoading ? "…" : stats.rejete}
+  icon={XCircle}
+  accentColor="#F87171"
+  onClick={() => navigate(ROUTES.memoiresListeAdmin, { state: { statutInitial: "rejete" } })}
+/>
+<StatCard
+  label="Total des dépôts"
+  value={statsLoading ? "…" : stats.total}
+  icon={FolderOpen}
+  accentColor="#ffffff"
+  onClick={() => navigate(ROUTES.memoiresListeAdmin, { state: { statutInitial: "" } })}
+/>
         </div>
 
         {/* Graphique par filière + tableau dépôts récents */}

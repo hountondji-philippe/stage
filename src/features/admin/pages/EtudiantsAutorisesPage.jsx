@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import EtudiantsToolbar from "../components/EtudiantsToolbar";
+import StatutTabsEtudiants from "../components/StatutTabsEtudiants";
 import BulkActionsBar from "../components/BulkActionsBar";
-import EtudiantsTable from "../components/EtudiantsTable";
-import EtudiantsCardList from "../components/EtudiantsCardList";
+import EtudiantsListe from "../components/EtudiantsListe";
 import EtudiantFormModal from "../components/EtudiantFormModal";
 import ImportModal from "../components/ImportModal";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
@@ -19,6 +19,8 @@ export default function EtudiantsAutorisesPage() {
     setSearch,
     filiere,
     setFiliere,
+    statutFiltre,
+    setStatutFiltre,
     selectedIds,
     allSelected,
     toggleSelected,
@@ -60,11 +62,10 @@ export default function EtudiantsAutorisesPage() {
       if (deleteTarget === "bulk") {
         const { failed } = await removeSelected();
         if (failed.length > 0) {
-          // Ex: certains étudiants sélectionnés ont un compte actif (409)
           setDeleteError(
             `${failed.length} étudiant(s) n'ont pas pu être supprimés (compte déjà actif). Les autres ont bien été retirés.`
           );
-          return; // on laisse la modale ouverte pour que l'admin voie le message
+          return;
         }
         closeDeleteModal();
       } else if (deleteTarget) {
@@ -101,6 +102,8 @@ export default function EtudiantsAutorisesPage() {
           onAddClick={openAddModal}
         />
 
+        <StatutTabsEtudiants statut={statutFiltre} onStatutChange={setStatutFiltre} />
+
         <BulkActionsBar
           count={selectedIds.length}
           onDeleteClick={() => openDeleteModal("bulk")}
@@ -111,26 +114,19 @@ export default function EtudiantsAutorisesPage() {
         )}
 
         {loading ? (
-          <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">
             Chargement...
           </div>
         ) : (
-          <>
-            <EtudiantsTable
-              etudiants={etudiants}
-              selectedIds={selectedIds}
-              allSelected={allSelected}
-              onToggleSelected={toggleSelected}
-              onToggleSelectAll={toggleSelectAll}
-              onEdit={openEditModal}
-              onDeleteOne={openDeleteModal}
-            />
-            <EtudiantsCardList
-              etudiants={etudiants}
-              onEdit={openEditModal}
-              onDeleteOne={openDeleteModal}
-            />
-          </>
+          <EtudiantsListe
+            etudiants={etudiants}
+            selectedIds={selectedIds}
+            allSelected={allSelected}
+            onToggleSelected={toggleSelected}
+            onToggleSelectAll={toggleSelectAll}
+            onEdit={openEditModal}
+            onDeleteOne={openDeleteModal}
+          />
         )}
       </div>
 

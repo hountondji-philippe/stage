@@ -19,7 +19,6 @@ export default function DashboardEtudiantPage() {
   const prenom = user?.etudiant_autorise?.prenom || "";
 
   async function handleDelete(id) {
-    if (!confirm("Supprimer définitivement ce dépôt rejeté ?")) return;
     try {
       // TODO: appeler l'endpoint de suppression une fois défini côté backend
       await refetch();
@@ -72,7 +71,10 @@ export default function DashboardEtudiantPage() {
 
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-[var(--color-text)]">Dépôts récents</h2>
-        <button className="text-sm font-semibold text-[var(--color-primary-light)] hover:underline">
+        <button
+          onClick={() => navigate(ROUTES.mesDepots)}
+          className="text-sm font-semibold text-[var(--color-primary-light)] hover:underline"
+        >
           Voir tout l'historique
         </button>
       </div>

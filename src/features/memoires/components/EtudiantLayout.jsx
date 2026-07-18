@@ -10,16 +10,18 @@ import {
   Search,
   ChevronDown,
   GraduationCap,
+   ListChecks,
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
 import LogoutConfirmModal from "../../../components/ui/LogoutConfirmModal";
 
 const NAV_ITEMS = [
-  { to: ROUTES.espaceEtudiant, label: "Mes dépôts", icon: FolderOpen },
+  { to: ROUTES.espaceEtudiant, label: "Tableau de bord", icon: FolderOpen },
+  { to: ROUTES.mesDepots, label: "Mes dépôts", icon: ListChecks },
   { to: ROUTES.depotEtudiant, label: "Nouveau dépôt", icon: FilePlus2 },
-  { to: ROUTES.archive, label: "Mémoires publics", icon: Globe2 },
   { to: ROUTES.profilEtudiant, label: "Mon profil", icon: UserRound },
+  { to: ROUTES.archive, label: "Mémoires publics", icon: Globe2 },
 ];
 
 function NavItem({ to, label, icon: Icon, onClick, className = "" }) {

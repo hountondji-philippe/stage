@@ -2,7 +2,7 @@ import { useState } from "react";
 import AdminLayout from "../components/AdminLayout";
 import PageHeader from "../components/PageHeader";
 import StatutFilterBar from "../components/StatutFilterBar";
-import MemoiresListeTable from "../components/MemoiresListeTable";
+import MemoiresListeCard from "../components/MemoiresListeCard";
 import Pagination from "../components/Pagination";
 import SupprimerMemoireModal from "../components/SupprimerMemoireModal";
 import { useMemoiresListe } from "../hooks/useMemoiresListe";
@@ -53,18 +53,25 @@ export default function MemoiresListePage() {
         <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">
           Chargement...
         </div>
+      ) : memoires.length === 0 ? (
+        <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">
+          Aucun mémoire ne correspond à ce filtre.
+        </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <MemoiresListeTable memoires={memoires} onDeleteClick={openDeleteModal} />
-          <Pagination
-            currentPage={meta.current_page}
-            totalPages={meta.last_page}
-            totalItems={meta.total}
-            pageSize={meta.per_page}
-            onPageChange={setPage}
-          />
+        <div className="space-y-4">
+          {memoires.map((m) => (
+            <MemoiresListeCard key={m.id} m={m} onDeleteClick={openDeleteModal} />
+          ))}
         </div>
       )}
+
+      <Pagination
+        currentPage={meta.current_page}
+        totalPages={meta.last_page}
+        totalItems={meta.total}
+        pageSize={meta.per_page}
+        onPageChange={setPage}
+      />
 
       <SupprimerMemoireModal
         open={Boolean(deleteTarget)}

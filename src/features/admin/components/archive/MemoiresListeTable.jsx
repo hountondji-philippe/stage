@@ -1,18 +1,18 @@
-import DepotRow from "./DepotRow";
-import DepotCard from "./DepotCard";
+import MemoiresListeRow from "./MemoiresListeRow";
+import MemoiresListeCard from "../MemoiresListeCard";
 
-export default function DepotsTable({ memoires }) {
+export default function MemoiresListeTable({ memoires, onDeleteClick }) {
   if (memoires.length === 0) {
     return (
       <div className="p-12 text-center text-sm text-gray-500">
-        Aucun dépôt en attente ne correspond à votre recherche.
+        Aucun mémoire ne correspond à ce filtre.
       </div>
     );
   }
 
   return (
     <>
-      {/* Desktop Table */}
+      {/* Desktop */}
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full border-collapse text-left">
           <thead className="border-b border-gray-200 bg-gray-50">
@@ -27,16 +27,16 @@ export default function DepotsTable({ memoires }) {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {memoires.map((m) => (
-              <DepotRow key={m.id} m={m} />
+              <MemoiresListeRow key={m.id} m={m} onDeleteClick={onDeleteClick} />
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Mobile Cards */}
+      {/* Mobile */}
       <div className="space-y-4 p-4 md:hidden">
         {memoires.map((m) => (
-          <DepotCard key={m.id} m={m} />
+          <MemoiresListeCard key={m.id} m={m} onDeleteClick={onDeleteClick} />
         ))}
       </div>
     </>

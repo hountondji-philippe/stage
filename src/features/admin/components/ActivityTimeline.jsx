@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Check, X, FileText } from "lucide-react";
 
 const STYLES = {
@@ -37,6 +38,8 @@ const LABELS = {
 };
 
 export default function ActivityTimeline({ activites }) {
+  const navigate = useNavigate();
+
   if (activites.length === 0) {
     return <p className="p-4 text-center text-sm text-gray-500">Aucune activité récente.</p>;
   }
@@ -46,7 +49,11 @@ export default function ActivityTimeline({ activites }) {
       {activites.map((a) => {
         const { bg, Icon } = STYLES[a.type];
         return (
-          <div key={a.id} className="relative pl-10">
+          <button
+            key={a.id}
+            onClick={() => navigate(`/admin/memoires/${a.memoire_id}`)}
+            className="relative block w-full rounded-lg pl-10 pr-2 py-1 text-left transition-colors hover:bg-gray-50"
+          >
             <div className={`absolute left-0 top-1 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white ${bg}`}>
               <Icon size={12} className="text-white" strokeWidth={3} />
             </div>
@@ -59,7 +66,7 @@ export default function ActivityTimeline({ activites }) {
                 {formatRelatif(a.date)}
               </span>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>

@@ -12,13 +12,18 @@ export function useEtudiantsAutorises() {
 
   const [search, setSearch] = useState("");
   const [filiere, setFiliere] = useState("");
+  const [statutFiltre, setStatutFiltre] = useState(""); // "" | "1" | "0"
   const [selectedIds, setSelectedIds] = useState([]);
 
   const fetchEtudiants = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const response = await getEtudiants({ recherche: search, filiereId: filiere });
+      const response = await getEtudiants({
+        recherche: search,
+        filiereId: filiere,
+        compteActive: statutFiltre,
+      });
       // Réponse paginée Laravel : { data: [...], current_page, last_page, total, ... }
       setEtudiants(response.data ?? response);
     } catch (err) {
@@ -26,7 +31,7 @@ export function useEtudiantsAutorises() {
     } finally {
       setLoading(false);
     }
-  }, [search, filiere]);
+  }, [search, filiere, statutFiltre]);
 
   // Recherche différée (debounce) pour éviter un appel API à chaque frappe
   useEffect(() => {
@@ -78,6 +83,8 @@ export function useEtudiantsAutorises() {
     setSearch,
     filiere,
     setFiliere,
+    statutFiltre,
+    setStatutFiltre,
     selectedIds,
     allSelected,
     toggleSelected,

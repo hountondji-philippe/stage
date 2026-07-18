@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 const COLORS = [
   "bg-[var(--color-primary)]",
   "bg-[var(--color-accent)]",
@@ -8,6 +10,8 @@ const COLORS = [
 ];
 
 export default function FiliereChart({ parFiliere }) {
+  const navigate = useNavigate();
+
   if (!parFiliere || parFiliere.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-gray-500">
@@ -21,7 +25,11 @@ export default function FiliereChart({ parFiliere }) {
   return (
     <div className="flex h-full flex-col justify-center gap-4">
       {parFiliere.map((f, i) => (
-        <div key={f.nom} className="flex flex-col gap-1.5">
+        <button
+          key={f.nom}
+          onClick={() => navigate(`/admin/memoires?filiere_id=${f.id}`)}
+          className="flex flex-col gap-1.5 rounded-lg p-1.5 text-left transition-colors hover:bg-gray-50"
+        >
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <span className={`h-3 w-3 rounded-full ${COLORS[i % COLORS.length]}`} />
@@ -35,7 +43,7 @@ export default function FiliereChart({ parFiliere }) {
               style={{ width: `${(f.total / max) * 100}%` }}
             />
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

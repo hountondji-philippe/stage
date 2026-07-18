@@ -1,14 +1,12 @@
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, AlertCircle, MoreVertical, Trash2 } from "lucide-react";
+import { GraduationCap, AlertCircle, MoreVertical, Trash2, Eye } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import StatusBadge from "../../../components/ui/StatusBadge";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { ROUTES } from "../../../router/paths";
 
-const BORDER_COLOR = {
-  en_attente: "border-l-[var(--color-status-attente)]",
-  valide: "border-l-[var(--color-status-valide)]",
-  rejete: "border-l-[var(--color-status-rejete)]",
-};
+const BORDER_COLOR = "border-l-[var(--color-primary)]";
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -22,9 +20,40 @@ function formatDate(dateStr) {
 export default function DepotCard({ depot, onDelete }) {
   const navigate = useNavigate();
   const { id, titre, statut, filiere, created_at, motif_rejet } = depot;
+  const [menuOuvert, setMenuOuvert] = useState(false);
+  const [confirmationOuverte, setConfirmationOuverte] = useState(false);
+  const menuRef = useRef(null);
+  const enAttente = statut === "en_attente";
 
   function handleVoirDetail() {
     navigate(ROUTES.memoireDetailEtudiant(id));
+  }
+
+  // Ferme le menu "..." si on clique en dehors
+  useEffect(() => {
+    if (!menuOuvert) return;
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOuvert(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOuvert]);
+
+  function handleDemanderSuppression() {
+    setMenuOuvert(false);
+    setConfirmationOuverte(true);
+  }
+
+  function handleConfirmerSuppression() {
+    setConfirmationOuverte(false);
+    onDelete?.(id);
+  }
+
+  function handleConsulterDepuisMenu() {
+    setMenuOuvert(false);
+    handleVoirDetail();
   }
 
   return (
@@ -62,41 +91,56 @@ export default function DepotCard({ depot, onDelete }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {statut === "en_attente" && (
-          <>
-            <Button variant="outline" onClick={() => navigate(ROUTES.depotEtudiantModifier(id))}>
-              Modifier
-            </Button>
-            <button
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50"
-              aria-label="Plus d'options"
-            >
-              <MoreVertical size={18} />
-            </button>
-          </>
-        )}
-
-        {statut === "rejete" && (
-          <>
-            <Button variant="primary" onClick={handleVoirDetail}>
-              Voir le détail
-            </Button>
-            <button
-              onClick={() => onDelete?.(id)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600"
-              aria-label="Supprimer"
-            >
-              <Trash2 size={18} />
-            </button>
-          </>
-        )}
-
-        {statut === "valide" && (
-          <Button variant="primary" onClick={() => navigate(ROUTES.memoirePublic(id))}>
-            Voir la page publique
+        {enAttente ? (
+          <Button variant="outline" onClick={() => navigate(ROUTES.depotEtudiantModifier(id))}>
+            Modifier
+          </Button>
+        ) : (
+          <Button variant="primary" onClick={handleVoirDetail}>
+            Consulter
           </Button>
         )}
+
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOuvert((v) => !v)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50"
+            aria-label="Plus d'options"
+          >
+            <MoreVertical size={18} />
+          </button>
+          {menuOuvert && (
+            <div className="absolute right-0 top-12 z-10 w-44 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg">
+              {enAttente && (
+                <button
+                  onClick={handleConsulterDepuisMenu}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  <Eye size={16} />
+                  Consulter
+                </button>
+              )}
+              <button
+                onClick={handleDemanderSuppression}
+                className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
+              >
+                <Trash2 size={16} />
+                Supprimer le dépôt
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmationOuverte}
+        titre="Supprimer ce dépôt ?"
+        message={`Cette action est irréversible. "${titre}" sera définitivement supprimé.`}
+        labelConfirmer="Supprimer"
+        onConfirm={handleConfirmerSuppression}
+        onCancel={() => setConfirmationOuverte(false)}
+        danger
+      />
     </div>
   );
 }

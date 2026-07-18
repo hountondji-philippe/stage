@@ -83,6 +83,7 @@ export default function ProfilEtudiantPage() {
       setLoading(false);
     }
   }
+  
 
   return (
     <EtudiantLayout>
@@ -120,11 +121,11 @@ export default function ProfilEtudiantPage() {
           <InfoRow icon={Mail} label="Email" value={user?.email} />
           <InfoRow icon={Hash} label="Matricule" value={etudiantAutorise?.matricule} />
           <InfoRow icon={GraduationCap} label="Filière" value={etudiantAutorise?.filiere?.nom} />
-          <InfoRow
-            icon={Calendar}
-            label="Niveau / Promotion"
-            value={etudiantAutorise ? `${etudiantAutorise.niveau} — ${etudiantAutorise.promo}` : null}
-          />
+         <InfoRow
+  icon={Calendar}
+  label="Niveau / Promotion"
+  value={etudiantAutorise ? `${etudiantAutorise.niveau} — ${etudiantAutorise.annee_scolaire}` : null}
+/>
           <p className="mt-4 text-xs text-gray-400">
             Ces informations sont gérées par l'administration. Contactez le service scolarité pour toute correction.
           </p>

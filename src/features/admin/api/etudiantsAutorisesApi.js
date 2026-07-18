@@ -3,17 +3,23 @@ import { apiClient } from "../../../lib/apiClient";
 const BASE_URL = "/admin/etudiants-autorises";
 
 /**
- * Liste des étudiants autorisés, avec recherche + filtre filière.
- * GET /api/admin/etudiants-autorises?recherche=...&filiere_id=...&promo=...
+ * Liste des étudiants autorisés, avec recherche + filtre filière + statut de compte.
+ * GET /api/admin/etudiants-autorises?recherche=...&filiere_id=...&annee_scolaire=...&compte_active=...
  *
  * Réponse Laravel paginée : { data: [...], current_page, last_page, total, ... }
  */
-export async function getEtudiants({ recherche = "", filiereId = "",  annee_scolaire = "" } = {}) {
+export async function getEtudiants({
+  recherche = "",
+  filiereId = "",
+  annee_scolaire = "",
+  compteActive = "",
+} = {}) {
   const { data } = await apiClient.get(BASE_URL, {
     params: {
       recherche: recherche || undefined,
       filiere_id: filiereId || undefined,
       annee_scolaire: annee_scolaire || undefined,
+      compte_active: compteActive === "" ? undefined : compteActive, // "1" | "0" | undefined
     },
   });
   return data; // { data: [...], current_page, last_page, total, ... }

@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   { to: ROUTES.etudiantsAutorisesAdmin, label: "Étudiants autorisés", icon: Users },
   { to: "/admin/filieres", label: "Filières", icon: Layers },
   { to: "/admin/profil", label: "Mon profil", icon: UserRound },
-  { to: "/admin/statistiques", label: "Statistiques", icon: BarChart3 },
+  // { to: "/admin/statistiques", label: "Statistiques", icon: BarChart3 },
 ];
 
 function NavItem({ to, label, icon: Icon, onClick, className = "" }) {

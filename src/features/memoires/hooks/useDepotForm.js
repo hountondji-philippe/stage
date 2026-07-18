@@ -8,11 +8,11 @@ const INITIAL_DATA = {
   titre: "",
   resume: "",
   filiere_id: "",
+  sous_filiere_id: "",
   cycle: "",
   annee: ANNEE_COURANTE,
   encadrant: "",
 };
-
 /**
  * @param {"etudiant"|"admin"} mode - "etudiant" : dépôt par soi-même (peut
  * éditer un dépôt existant). "admin" : ajout manuel pour un étudiant tiers
@@ -47,13 +47,14 @@ export function useDepotForm(mode = "etudiant") {
       .then((memoire) => {
         if (!mounted) return;
         setData({
-          titre: memoire.titre || "",
-          resume: memoire.resume || "",
-          filiere_id: memoire.filiere_id || "",
-          cycle: memoire.cycle || "",
-          annee: memoire.annee || INITIAL_DATA.annee,
-          encadrant: memoire.encadrant || "",
-        });
+  titre: memoire.titre || "",
+  resume: memoire.resume || "",
+  filiere_id: memoire.filiere_id || "",
+  sous_filiere_id: memoire.sous_filiere_id || "",
+  cycle: memoire.cycle || "",
+  annee: memoire.annee || INITIAL_DATA.annee,
+  encadrant: memoire.encadrant || "",
+});
         setFiles({
           memoire: memoire.fichier_memoire
             ? { name: memoire.fichier_memoire.split("/").pop(), existing: true }
@@ -114,13 +115,15 @@ export function useDepotForm(mode = "etudiant") {
     setSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append("titre", data.titre);
-      formData.append("resume", data.resume);
-      formData.append("filiere_id", data.filiere_id);
-      formData.append("cycle", data.cycle);
-      formData.append("annee", data.annee);
-      formData.append("encadrant", data.encadrant);
-
+     formData.append("titre", data.titre);
+formData.append("resume", data.resume);
+formData.append("filiere_id", data.filiere_id);
+if (data.sous_filiere_id) {
+  formData.append("sous_filiere_id", data.sous_filiere_id);
+}
+formData.append("cycle", data.cycle);
+formData.append("annee", data.annee);
+formData.append("encadrant", data.encadrant);
       if (isAdmin) {
         formData.append("etudiant_autorise_id", etudiantAutoriseId);
       }

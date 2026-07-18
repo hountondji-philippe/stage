@@ -11,12 +11,15 @@ export const ROUTES = {
   connexionAdmin: "/connexion-admin",
 
   espaceEtudiant: "/etudiant/tableau-de-bord",
+  mesDepots: "/etudiant/mes-depots",
   depotEtudiant: "/etudiant/deposer",
   depotEtudiantModifier: (id) => `/etudiant/deposer/${id}`,
   memoireDetailEtudiant: (id) => `/etudiant/memoires/${id}`,
   profilEtudiant: "/etudiant/profil",
 
   espaceAdmin: "/admin/tableau-de-bord",
-  depotsEnAttenteAdmin: "/admin/depots-en-attente",
-  etudiantsAutorisesAdmin: "/admin/etudiants-autorises",
+depotsEnAttenteAdmin: "/admin/depots-en-attente",
+etudiantsAutorisesAdmin: "/admin/etudiants-autorises",
+memoireDetailAdmin: (id) => `/admin/memoires/${id}`,
+memoiresListeAdmin: "/admin/memoires",
 };

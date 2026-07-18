@@ -6,7 +6,7 @@ import AdminDepotCard from "../components/AdminDepotCard";
 import Pagination from "../components/Pagination";
 import { getMemoiresEnAttente, getFiliereList } from '../api/adminService';
 
-const PAGE_SIZE = 4; // comme dans la maquette ("Affichage 1-4 sur 8 dépôts")
+const PAGE_SIZE = 4;
 
 function joursDepuis(dateStr) {
   if (!dateStr) return 0;
@@ -18,11 +18,9 @@ export default function DepotsPage() {
   const [filieres, setFilieres] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // État de la recherche/filtre/tri/pagination — géré côté frontend,
-  // le controller Laravel ne supporte pas encore ces paramètres.
   const [search, setSearch] = useState("");
   const [filiereId, setFiliereId] = useState("");
-  const [sort, setSort] = useState("ancien"); // "ancien" | "recent"
+  const [sort, setSort] = useState("ancien");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -45,7 +43,6 @@ export default function DepotsPage() {
     }
   };
 
-  // Recherche + filtre + tri, recalculés à chaque changement
   const filtered = useMemo(() => {
     let result = memoires;
 
@@ -54,10 +51,7 @@ export default function DepotsPage() {
       result = result.filter((m) => {
         const etudiant = m.user?.etudiantAutorise ?? m.user?.etudiant_autorise;
         const nomComplet = etudiant ? `${etudiant.nom} ${etudiant.prenom}` : m.user?.email ?? "";
-        return (
-          m.titre?.toLowerCase().includes(terme) ||
-          nomComplet.toLowerCase().includes(terme)
-        );
+        return m.titre?.toLowerCase().includes(terme) || nomComplet.toLowerCase().includes(terme);
       });
     }
 
@@ -73,10 +67,18 @@ export default function DepotsPage() {
     return result;
   }, [memoires, search, filiereId, sort]);
 
-  // Repart à la page 1 dès qu'un filtre change
   useEffect(() => {
     setPage(1);
   }, [search, filiereId, sort]);
+
+  async function handleDelete(id) {
+    try {
+      // TODO: appeler l'endpoint Laravel de suppression (DELETE /memoires/{id}) une fois confirmé
+      setMemoires((prev) => prev.filter((m) => m.id !== id));
+    } catch (err) {
+      console.error("Erreur de suppression:", err);
+    }
+  }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -107,7 +109,7 @@ export default function DepotsPage() {
       ) : (
         <div className="space-y-4">
           {paginated.map((memoire) => (
-            <AdminDepotCard key={memoire.id} memoire={memoire} />
+            <AdminDepotCard key={memoire.id} memoire={memoire} onDelete={handleDelete} />
           ))}
         </div>
       )}
