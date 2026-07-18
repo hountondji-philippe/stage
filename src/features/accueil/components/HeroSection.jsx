@@ -29,9 +29,9 @@ export default function HeroSection() {
 
   return (
     <section 
-      className="relative flex min-h-[600px] flex-col items-center justify-center overflow-hidden bg-cover bg-center px-6 py-20 text-center"
-      style={{ backgroundImage: `url(${heroBg})` }}
-    >
+  className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-cover bg-center px-6 py-20 text-center"
+  style={{ backgroundImage: `url(${heroBg})` }}
+>
       <div className="absolute inset-0 bg-[var(--color-primary)]/80" /> {/* Calque de couleur */}
 
       <div className="relative z-10 mx-auto max-w-4xl">

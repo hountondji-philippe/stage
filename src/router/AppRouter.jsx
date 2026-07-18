@@ -27,6 +27,7 @@ import MemoiresListePage from "../features/admin/pages/MemoiresListePage";
 import ListeFilierePage from "../features/admin/pages/ListeFilierePage";
 import MesDepotsPage from "../features/memoires/pages/MesDepotsPage";
 import AProposPage from "../features/accueil/pages/AProposPage";
+import ListeActualitesPage from "../features/admin/pages/ListeActualitesPage";
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -164,6 +165,14 @@ export default function AppRouter() {
             </RouteProtegee>
           }
         />
+        <Route
+  path="/admin/actualites"
+  element={
+    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+      <ListeActualitesPage />
+    </RouteProtegee>
+  }
+/>
 
         {/* Page 404 (doit toujours être en dernier) */}
         <Route path="*" element={<div className="p-10 text-center">Page introuvable (404)</div>} />
