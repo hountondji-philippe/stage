@@ -1,6 +1,7 @@
 export const ROUTES = {
   accueil: "/",
   archive: "/archive",
+  aPropos: "/a-propos",
   memoirePublic: (id) => `/memoires/${id}`,
 
   inscription: "/inscription",
@@ -22,4 +23,5 @@ depotsEnAttenteAdmin: "/admin/depots-en-attente",
 etudiantsAutorisesAdmin: "/admin/etudiants-autorises",
 memoireDetailAdmin: (id) => `/admin/memoires/${id}`,
 memoiresListeAdmin: "/admin/memoires",
+
 };

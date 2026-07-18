@@ -1,7 +1,11 @@
 import HeroSection from "../components/HeroSection";
 import StatsSection from "../components/StatsSection";
+import FilieresEnVedette from "../components/FilieresEnVedette";
 import RecentMemoiresSection from "../components/RecentMemoiresSection";
+import TopMemoiresConsultes from "../components/TopMemoiresConsultes";
+import PourquoiChoisir from "../components/PourquoiChoisir";
 import HowItWorksSection from "../components/HowItWorksSection";
+import ActualitesAcademiques from "../components/ActualitesAcademiques";
 import CtaFinalSection from "../components/CtaFinalSection";
 import { useAccueilData } from "../hooks/useAccueilData";
 import { LoadingSpinner } from "../../../components/ui/LoadingSpinner"; // Supposé existant
@@ -33,15 +37,27 @@ export default function AccueilPage() {
       {/* 2. Stats : Connecté au backend via stats() */}
       <StatsSection stats={stats} />
 
-      {/* 3. Mémoires Récents */}
+      {/* 3. Filières en vedette (contenu statique, frontend uniquement) */}
+      <FilieresEnVedette />
+
+      {/* 4. Mémoires Récents */}
       {recentes && recentes.length > 0 && (
         <RecentMemoiresSection memoires={recentes} />
       )}
 
-      {/* 4. Processus */}
+      {/* 5. Top mémoires consultés (contenu statique, frontend uniquement) */}
+      <TopMemoiresConsultes />
+
+      {/* 6. Pourquoi choisir MÉMOIRES+ (contenu statique, frontend uniquement) */}
+      <PourquoiChoisir />
+
+      {/* 7. Processus */}
       <HowItWorksSection />
 
-      {/* 5. CTA Final */}
+      {/* 8. Actualités académiques (contenu statique, frontend uniquement) */}
+      <ActualitesAcademiques />
+
+      {/* 9. CTA Final */}
       <CtaFinalSection />
     </main>
   );

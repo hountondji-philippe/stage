@@ -26,6 +26,7 @@ import MemoireDetailPage from "../features/recherche/pages/MemoireDetailPage";
 import MemoiresListePage from "../features/admin/pages/MemoiresListePage";
 import ListeFilierePage from "../features/admin/pages/ListeFilierePage";
 import MesDepotsPage from "../features/memoires/pages/MesDepotsPage";
+import AProposPage from "../features/accueil/pages/AProposPage";
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -34,17 +35,19 @@ export default function AppRouter() {
         <Route element={<PublicLayout />}>
           <Route path={ROUTES.accueil} element={<AccueilPage />} />
           <Route path="/memoires/:id" element={<MemoireDetailPage />} />
+          <Route path={ROUTES.aPropos} element={<AProposPage />} />
+          <Route path={ROUTES.activation(":token")} element={<ActivationPage />} />
+         <Route path={ROUTES.motDePasseOublie} element={<MotDePasseOubliePage />} />
+
           <Route path={ROUTES.archive} element={<SearchPage />} />
         </Route>
 
         {/* --- Espace SANS Header et Footer --- */}
         <Route path={ROUTES.inscription} element={<InscriptionPage />} />
         <Route path="/activation/:token" element={<ActivationPage />} />
-        <Route path={ROUTES.motDePasseOublie} element={<MotDePasseOubliePage />} />
         <Route path="/reinitialiser-mot-de-passe/:token" element={<ReinitialiserMotDePassePage />} />
         <Route path={ROUTES.connexionEtudiant} element={<ConnexionEtudiantPage />} />
         <Route path={ROUTES.connexionAdmin} element={<ConnexionAdminPage />} />
-
         <Route
           path={ROUTES.espaceAdmin}
           element={

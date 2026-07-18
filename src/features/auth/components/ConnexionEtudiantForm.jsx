@@ -96,12 +96,12 @@ export default function ConnexionEtudiantForm() {
           <div className="h-px flex-1 bg-gray-200" />
         </div>
         <Link
-          to={ROUTES.recherche}
-          className="flex items-center justify-center gap-2 text-sm text-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
-        >
-          <Globe className="h-4 w-4" />
-          Consulter les mémoires sans compte
-        </Link>
+  to={ROUTES.archive}
+  className="flex items-center justify-center gap-2 text-sm text-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+>
+  <Globe className="h-4 w-4" />
+  Consulter les mémoires sans compte
+</Link>
       </div>
 
       {/* Lien inscription — visible partout (mobile ET desktop) */}

@@ -9,6 +9,7 @@ import logo from "../../assets/memoire.png";
 const NAV_LINKS = [
   { to: ROUTES.accueil, label: "Accueil" },
   { to: ROUTES.archive, label: "Rechercher un mémoire" },
+  { to: ROUTES.aPropos, label: "À propos" },
 ];
 
 function NavItem({ to, label, onClick }) {
@@ -57,12 +58,6 @@ export default function PublicHeader() {
           {NAV_LINKS.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
-          <a
-            href="#a-propos"
-            className="text-sm font-semibold text-gray-600 transition-colors hover:text-[var(--color-primary-light)]"
-          >
-            À propos
-          </a>
         </nav>
 
         <div className="hidden md:block">
@@ -85,9 +80,6 @@ export default function PublicHeader() {
           {NAV_LINKS.map((item) => (
             <NavItem key={item.to} {...item} onClick={() => setMobileOpen(false)} />
           ))}
-          <a href="#a-propos" onClick={() => setMobileOpen(false)} className="text-sm font-semibold text-gray-600">
-            À propos
-          </a>
           <Button variant="primary" fullWidth onClick={handleEspaceEtudiant}>
             {isAuthenticated ? "Mon espace" : "Espace étudiant"}
           </Button>

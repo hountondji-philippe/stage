@@ -9,8 +9,7 @@ export default function SearchPage() {
   const { memoires, filieres, meta, activeFilters, loading, handleSearch, goToPage, changeSort } = useRecherche();
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-20 pt-24">
-      <HeroSection />
+<main className="min-h-screen bg-gray-50 pb-20">      <HeroSection />
       <SearchSection onSearch={handleSearch} filieres={filieres} />
 
       <section className="mx-auto max-w-7xl px-6 py-12">
