@@ -11,11 +11,14 @@ class FiliereController extends Controller
 {
     public function index()
     {
-        $filieres = Filiere::orderBy('nom')->get();
+        $filieres = Filiere::withCount([
+            'memoires' => function ($query) {
+                $query->where('statut', 'valide');
+            }
+        ])->orderBy('nom')->get();
 
         return response()->json(['filieres' => $filieres]);
     }
-
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
