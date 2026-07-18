@@ -50,6 +50,18 @@ $memoires = $query->paginate(12);
 
         return response()->json($memoires);
     }
+    
+    public function plusConsultesPublic()
+{
+    $memoires = Memoire::valides()
+        ->with(['filiere', 'sousFiliere', 'user.etudiantAutorise'])
+        ->orderByDesc('views_count')
+        ->limit(10)
+        ->get();
+
+    return response()->json(['memoires' => $memoires]);
+}
+
 
     public function afficherPublic(Memoire $memoire)
     {
