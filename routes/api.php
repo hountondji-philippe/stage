@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\EtudiantAutoriseController;
 use App\Http\Controllers\Api\FiliereController;
 use App\Http\Controllers\Api\SousFiliereController;
+use App\Http\Controllers\Api\ActualiteController;
+
 
 Route::post('/auth/verifier-matricule', [AuthController::class, 'verifierMatricule']);
 Route::post('/auth/activer-compte', [AuthController::class, 'activerCompte']);
@@ -25,6 +27,7 @@ Route::get('/sous-filieres', [SousFiliereController::class, 'index']);
 Route::get('/memoires/{memoire}/apercu', [MemoireController::class, 'apercuPublic']);
 Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
 Route::get('/memoires/plus-consultes', [MemoireController::class, 'plusConsultesPublic']);
+Route::get('/actualites', [ActualiteController::class, 'index']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -51,6 +54,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::apiResource('/admin/etudiants-autorises', EtudiantAutoriseController::class)
             ->parameters(['etudiants-autorises' => 'etudiantAutorise']);
+        
+            Route::apiResource('/admin/actualites', ActualiteController::class)
+            ->except(['index', 'show']);
 
         Route::apiResource('/admin/filieres', FiliereController::class)
             ->except(['index', 'show']);
