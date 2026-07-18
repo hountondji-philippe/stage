@@ -35,7 +35,7 @@ export default function AccueilPage() {
       <HeroSection />
 
       {/* 2. Stats : Connecté au backend via stats() */}
-      <StatsSection stats={stats} />
+      {/* <StatsSection stats={stats} /> */}
 
       {/* 3. Filières en vedette (contenu statique, frontend uniquement) */}
       <FilieresEnVedette />

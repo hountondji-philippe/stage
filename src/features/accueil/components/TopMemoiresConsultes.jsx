@@ -1,13 +1,32 @@
+import { useEffect, useState } from "react";
 import { TopMemoireRow } from "./TopMemoireRow";
+import { apiClient } from "../../../lib/apiClient";
+import { extraireTableau } from "../../../lib/apiUtils";
 
 export default function TopMemoiresConsultes() {
-  // TODO: remplacer par un fetch backend (GET /memoires/populaires ou équivalent)
-  const top = [
-    { id: 1, rang: 1, titre: "Analyse de la performance financière des PME en zone UEMOA", auteur: "Jean-Paul ADANON", filiere: "Finance & Comptabilité", vues: "3,204" },
-    { id: 2, rang: 2, titre: "Impact de l'intelligence artificielle sur l'audit comptable", auteur: "Koffi MENSAH", filiere: "Audit et Contrôle de Gestion", vues: "2,857" },
-    { id: 3, rang: 3, titre: "Stratégies de Management Digital dans l'administration publique", auteur: "Mariam SOULE", filiere: "Management des Projets", vues: "2,410" },
-    { id: 4, rang: 4, titre: "Digitalisation des PME beninoises : enjeux et perspectives", auteur: "Aïcha BOKO", filiere: "Marketing & Commerce", vues: "1,932" },
-  ];
+  const [memoires, setMemoires] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    apiClient
+      .get("/memoires/plus-consultes")
+      .then(({ data }) => {
+        if (mounted) setMemoires(extraireTableau(data, "memoires").slice(0, 5));
+      })
+      .catch(() => {
+        if (mounted) setError("Impossible de charger le classement.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <section className="bg-white px-6 py-20 md:px-10 lg:py-24">
@@ -22,11 +41,19 @@ export default function TopMemoiresConsultes() {
           Le classement des travaux les plus lus par la communauté ENEAM.
         </p>
 
-        <div className="flex flex-col gap-4">
-          {top.map((m) => (
-            <TopMemoireRow key={m.id} memoire={m} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="py-12 text-center text-sm text-gray-400">Chargement du classement...</div>
+        ) : error ? (
+          <div className="py-12 text-center text-sm text-red-500">{error}</div>
+        ) : memoires.length === 0 ? (
+          <div className="py-12 text-center text-sm text-gray-400">Aucun mémoire consulté pour l'instant.</div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {memoires.map((memoire, index) => (
+              <TopMemoireRow key={memoire.id} memoire={memoire} rang={index + 1} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
