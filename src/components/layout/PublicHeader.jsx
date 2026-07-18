@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, GraduationCap } from "lucide-react";
 import Button from "../ui/Button";
 import { ROUTES } from "../../router/paths";
 import { useAuth } from "../../features/auth/hooks/useAuth";
-import logo from "../../assets/memoire.png";
 
 const NAV_LINKS = [
   { to: ROUTES.accueil, label: "Accueil" },
@@ -50,8 +49,13 @@ export default function PublicHeader() {
   return (
     <header className="fixed left-0 top-0 z-50 h-20 w-full bg-white shadow-sm">
       <div className="mx-auto flex h-full max-w-[1280px] items-center justify-between px-4 md:px-12">
-        <Link to={ROUTES.accueil} className="flex items-center gap-2">
-          <img src={logo} alt="MÉMOIRES+" className="h-16 w-16 object-contain md:h-20 md:w-20" />
+        <Link to={ROUTES.accueil} className="flex items-center gap-2.5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary)]">
+            <GraduationCap size={20} className="text-white" />
+          </div>
+          <span className="text-lg font-extrabold uppercase tracking-tight text-[var(--color-primary)]">
+            MÉMOIRES+
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

@@ -10,7 +10,7 @@ import {
   Search,
   ChevronDown,
   GraduationCap,
-   ListChecks,
+  ListChecks,
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
@@ -20,8 +20,8 @@ const NAV_ITEMS = [
   { to: ROUTES.espaceEtudiant, label: "Tableau de bord", icon: FolderOpen },
   { to: ROUTES.mesDepots, label: "Mes dépôts", icon: ListChecks },
   { to: ROUTES.depotEtudiant, label: "Nouveau dépôt", icon: FilePlus2 },
-  { to: ROUTES.profilEtudiant, label: "Mon profil", icon: UserRound },
   { to: ROUTES.archive, label: "Mémoires publics", icon: Globe2 },
+  { to: ROUTES.profilEtudiant, label: "Mon profil", icon: UserRound },
 ];
 
 function NavItem({ to, label, icon: Icon, onClick, className = "" }) {
@@ -33,7 +33,7 @@ function NavItem({ to, label, icon: Icon, onClick, className = "" }) {
       className={({ isActive }) =>
         `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
           isActive
-            ? "bg-[var(--color-accent)]/20 text-[var(--color-primary)] font-bold"
+            ? "bg-white/10 text-white font-bold"
             : "text-gray-300 hover:bg-white/5 hover:text-white"
         } ${className}`
       }

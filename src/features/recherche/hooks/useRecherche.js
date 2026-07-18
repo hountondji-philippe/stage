@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { searchMemoires, getFilieres } from '../api/rechercheApi';
 
 export function useRecherche() {
+  const [searchParams] = useSearchParams();
   const [memoires, setMemoires] = useState([]);
   const [filieres, setFilieres] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -41,7 +43,20 @@ export function useRecherche() {
       try {
         const filiereData = await getFilieres();
         setFilieres(filiereData);
-        await handleSearch({});
+
+        // Filtres initiaux construits depuis l'URL (?filiere_id=X&sous_filiere_id=Y...)
+        const filtresDepuisUrl = {};
+        const filiereId = searchParams.get("filiere_id");
+        const sousFiliereId = searchParams.get("sous_filiere_id");
+        const recherche = searchParams.get("recherche");
+        const annee = searchParams.get("annee");
+
+        if (filiereId) filtresDepuisUrl.filiere_id = filiereId;
+        if (sousFiliereId) filtresDepuisUrl.sous_filiere_id = sousFiliereId;
+        if (recherche) filtresDepuisUrl.recherche = recherche;
+        if (annee) filtresDepuisUrl.annee = annee;
+
+        await handleSearch(filtresDepuisUrl);
       } catch (err) {
         console.error("Erreur d'initialisation:", err);
         setError(err);

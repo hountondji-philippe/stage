@@ -1,18 +1,70 @@
-import { Landmark, Briefcase, Calculator, TrendingUp, Scale, Users, Globe, LayoutGrid } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Landmark,
+  Briefcase,
+  Calculator,
+  TrendingUp,
+  Scale,
+  Users,
+  Globe,
+  GraduationCap,
+} from "lucide-react";
 import { FiliereCard } from "./FiliereCard";
+import { getFilieres, getToutesSousFilieres } from "../../memoires/api/filieresApi";
+const ICONES_PAR_MOT_CLE = [
+  { motCle: "finance", icon: Landmark },
+  { motCle: "comptab", icon: Landmark },
+  { motCle: "projet", icon: Briefcase },
+  { motCle: "audit", icon: Calculator },
+  { motCle: "contrôle", icon: Calculator },
+  { motCle: "marketing", icon: TrendingUp },
+  { motCle: "commerce", icon: TrendingUp },
+  { motCle: "droit", icon: Scale },
+  { motCle: "juridique", icon: Scale },
+  { motCle: "ressources humaines", icon: Users },
+  { motCle: "rh", icon: Users },
+  { motCle: "international", icon: Globe },
+];
+
+function iconePourFiliere(nom) {
+  const nomNormalise = nom.toLowerCase();
+  const trouve = ICONES_PAR_MOT_CLE.find((entree) => nomNormalise.includes(entree.motCle));
+  return trouve ? trouve.icon : GraduationCap;
+}
 
 export default function FilieresEnVedette() {
-  // TODO: remplacer par un fetch backend (GET /filieres?populaires=true ou équivalent)
-  const filieres = [
-    { id: 1, nom: "Finance & Comptabilité", description: "Analyse financière, audit et gestion budgétaire des organisations.", icon: Landmark, memoires_count: 412 },
-    { id: 2, nom: "Management des Projets", description: "Pilotage, planification et conduite de projets complexes.", icon: Briefcase, memoires_count: 356 },
-    { id: 3, nom: "Audit et Contrôle de Gestion", description: "Vérification comptable et pilotage de la performance.", icon: Calculator, memoires_count: 298 },
-    { id: 4, nom: "Marketing & Commerce", description: "Stratégies commerciales et comportement du consommateur.", icon: TrendingUp, memoires_count: 274 },
-    { id: 5, nom: "Droit des Affaires", description: "Cadre juridique et réglementation des entreprises.", icon: Scale, memoires_count: 201 },
-    { id: 6, nom: "Gestion des Ressources Humaines", description: "Management du capital humain et des organisations.", icon: Users, memoires_count: 187 },
-    { id: 7, nom: "Commerce International", description: "Échanges commerciaux et stratégies à l'export.", icon: Globe, memoires_count: 163 },
-    { id: 8, nom: "Toutes les filières", description: "Parcourez l'intégralité des travaux de recherche.", icon: LayoutGrid, memoires_count: null },
-  ];
+  const [filieres, setFilieres] = useState([]);
+  const [sousFilieresParFiliere, setSousFilieresParFiliere] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    Promise.all([getFilieres(), getToutesSousFilieres()])
+      .then(([listeFilieres, listeSousFilieres]) => {
+        if (!mounted) return;
+
+        const groupees = {};
+        listeSousFilieres.forEach((sf) => {
+          if (!groupees[sf.filiere_id]) groupees[sf.filiere_id] = [];
+          groupees[sf.filiere_id].push(sf);
+        });
+
+        setFilieres(listeFilieres);
+        setSousFilieresParFiliere(groupees);
+      })
+      .catch(() => {
+        if (mounted) setError("Impossible de charger les filières.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <section className="bg-white px-6 py-20 md:px-10 lg:py-24">
@@ -27,11 +79,27 @@ export default function FilieresEnVedette() {
           Explorez les travaux de recherche classés par domaine d'étude.
         </p>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {filieres.map((f) => (
-            <FiliereCard key={f.id} filiere={f} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="py-12 text-center text-sm text-gray-400">Chargement des filières...</div>
+        ) : error ? (
+          <div className="py-12 text-center text-sm text-red-500">{error}</div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {filieres.map((f) => (
+              <FiliereCard
+                key={f.id}
+                filiere={{
+                  id: f.id,
+                  nom: f.nom,
+                  description: f.description,
+                  icon: iconePourFiliere(f.nom),
+                  memoires_count: f.memoires_count,
+                }}
+                sousFilieres={sousFilieresParFiliere[f.id] || []}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

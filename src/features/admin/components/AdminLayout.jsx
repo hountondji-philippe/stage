@@ -42,7 +42,7 @@ function NavItem({ to, label, icon: Icon, onClick, className = "" }) {
       className={({ isActive }) =>
         `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
           isActive
-            ? "bg-[var(--color-accent)]/20 text-[var(--color-primary)] font-bold"
+            ? "bg-white/10 text-white font-bold"
             : "text-gray-300 hover:bg-white/5 hover:text-white"
         } ${className}`
       }
