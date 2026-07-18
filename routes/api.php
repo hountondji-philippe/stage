@@ -23,6 +23,8 @@ Route::get('/memoires/{memoire}/telecharger', [MemoireController::class, 'telech
 Route::get('/filieres', [FiliereController::class, 'index']);
 Route::get('/sous-filieres', [SousFiliereController::class, 'index']);
 Route::get('/memoires/{memoire}/apercu', [MemoireController::class, 'apercuPublic']);
+Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
+Route::get('/memoires/plus-consultes', [MemoireController::class, 'plusConsultesPublic']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -37,9 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/memoires', [MemoireController::class, 'store']);
     Route::put('/memoires/{memoire}', [MemoireController::class, 'update']);
     Route::delete('/memoires/{memoire}', [MemoireController::class, 'destroy']);
-    Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
-    Route::get('/memoires/plus-consultes', [MemoireController::class, 'plusConsultesPublic']);
-    
+
     Route::middleware('admin')->group(function () {
         Route::get('/admin/memoires/en-attente', [MemoireController::class, 'enAttenteAdmin']);
         Route::get('/admin/memoires', [MemoireController::class, 'tousAdmin']);
