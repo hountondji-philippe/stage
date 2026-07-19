@@ -5,6 +5,7 @@ import FilieresTable from "../components/FilieresTable";
 import FiliereFormModal from "../components/FiliereFormModal";
 import AjouterSousFiliereModal from "../components/AjouterSousFiliereModal";
 import ConfirmSuppressionModal from "../components/ConfirmSuppressionModal";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useFilieresAdmin } from "../hooks/useFilieresAdmin";
 
 export default function ListeFilierePage() {
@@ -57,8 +58,8 @@ export default function ListeFilierePage() {
         {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
         {loading ? (
-          <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">
-            Chargement...
+          <div className="relative min-h-[320px] rounded-xl border border-gray-200 bg-white shadow-sm">
+            <LoadingScreen fullScreen={false} message="Chargement..." />
           </div>
         ) : (
           <FilieresTable

@@ -5,6 +5,7 @@ import StatutFilterBar from "../components/StatutFilterBar";
 import MemoiresListeCard from "../components/MemoiresListeCard";
 import Pagination from "../components/Pagination";
 import SupprimerMemoireModal from "../components/SupprimerMemoireModal";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useMemoiresListe } from "../hooks/useMemoiresListe";
 
 export default function MemoiresListePage() {
@@ -50,8 +51,8 @@ export default function MemoiresListePage() {
       {error && <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
       {loading ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">
-          Chargement...
+        <div className="relative min-h-[320px] rounded-xl border border-gray-200 bg-white shadow-sm">
+          <LoadingScreen fullScreen={false} message="Chargement..." />
         </div>
       ) : memoires.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">

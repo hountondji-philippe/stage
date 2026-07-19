@@ -6,10 +6,12 @@ import StatCard from "../components/StatCard";
 import FiliereChart from "../components/FiliereChart";
 import RecentSubmissionsTable from "../components/RecentSubmissionsTable";
 import ActivityTimeline from "../components/ActivityTimeline";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useAdminStats } from "../hooks/useAdminStats";
 import { useActiviteRecente } from "../hooks/useActiviteRecente";
 import { getMemoiresEnAttente } from "../api/adminService";
 import { ROUTES } from "../../../router/paths";
+
 export default function DashboardAdminPage() {
   const navigate = useNavigate();
   const { stats, loading: statsLoading } = useAdminStats();
@@ -30,6 +32,19 @@ export default function DashboardAdminPage() {
     })();
   }, []);
 
+  // Un seul état de chargement global pour toute la page
+  const isLoading = statsLoading || depotsLoading || activitesLoading;
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="relative min-h-[70vh]">
+          <LoadingScreen fullScreen={false} message="Chargement du tableau de bord..." />
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -43,65 +58,51 @@ export default function DashboardAdminPage() {
         {/* 4 cartes stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-  label="En attente"
-  value={statsLoading ? "…" : stats.en_attente}
-  icon={AlertTriangle}
-  accentColor="#F5B800"
-  onClick={() => navigate(ROUTES.depotsEnAttenteAdmin)}
-/>
-<StatCard
-  label="Validés"
-  value={statsLoading ? "…" : stats.valide}
-  icon={CheckCircle2}
-  accentColor="#4ADE80"
-  onClick={() => navigate(ROUTES.memoiresListeAdmin, { state: { statutInitial: "valide" } })}
-/>
-<StatCard
-  label="Rejetés"
-  value={statsLoading ? "…" : stats.rejete}
-  icon={XCircle}
-  accentColor="#F87171"
-  onClick={() => navigate(ROUTES.memoiresListeAdmin, { state: { statutInitial: "rejete" } })}
-/>
-<StatCard
-  label="Total des dépôts"
-  value={statsLoading ? "…" : stats.total}
-  icon={FolderOpen}
-  accentColor="#ffffff"
-  onClick={() => navigate(ROUTES.memoiresListeAdmin, { state: { statutInitial: "" } })}
-/>
+            label="En attente"
+            value={stats.en_attente}
+            icon={AlertTriangle}
+            accentColor="#F5B800"
+            onClick={() => navigate(ROUTES.depotsEnAttenteAdmin)}
+          />
+          <StatCard
+            label="Validés"
+            value={stats.valide}
+            icon={CheckCircle2}
+            accentColor="#4ADE80"
+            onClick={() => navigate(ROUTES.memoiresListeAdmin, { state: { statutInitial: "valide" } })}
+          />
+          <StatCard
+            label="Rejetés"
+            value={stats.rejete}
+            icon={XCircle}
+            accentColor="#F87171"
+            onClick={() => navigate(ROUTES.memoiresListeAdmin, { state: { statutInitial: "rejete" } })}
+          />
+          <StatCard
+            label="Total des dépôts"
+            value={stats.total}
+            icon={FolderOpen}
+            accentColor="#ffffff"
+            onClick={() => navigate(ROUTES.memoiresListeAdmin, { state: { statutInitial: "" } })}
+          />
         </div>
 
         {/* Graphique par filière + tableau dépôts récents */}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm xl:col-span-1">
             <h4 className="mb-4 text-base font-bold text-gray-900">Répartition par filière</h4>
-            {statsLoading ? (
-              <div className="py-8 text-center text-sm text-gray-500">Chargement...</div>
-            ) : (
-              <FiliereChart parFiliere={stats.par_filiere} />
-            )}
+            <FiliereChart parFiliere={stats.par_filiere} />
           </div>
 
           <div className="xl:col-span-2">
-            {depotsLoading ? (
-              <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
-                Chargement...
-              </div>
-            ) : (
-              <RecentSubmissionsTable memoires={depotsRecents} />
-            )}
+            <RecentSubmissionsTable memoires={depotsRecents} />
           </div>
         </div>
 
         {/* Activité récente */}
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <h4 className="mb-4 text-base font-bold text-gray-900">Activité récente</h4>
-          {activitesLoading ? (
-            <div className="py-8 text-center text-sm text-gray-500">Chargement...</div>
-          ) : (
-            <ActivityTimeline activites={activites} />
-          )}
+          <ActivityTimeline activites={activites} />
         </div>
       </div>
     </AdminLayout>

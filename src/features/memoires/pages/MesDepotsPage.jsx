@@ -2,6 +2,7 @@ import { useState } from "react";
 import EtudiantLayout from "../components/EtudiantLayout";
 import DepotCard from "../components/DepotCard";
 import EmptyState from "../components/EmptyState";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useMesDepots } from "../hooks/useMesDepots";
 
 const TABS = [
@@ -54,25 +55,23 @@ export default function MesDepotsPage() {
         })}
       </div>
 
-      {loading && (
-        <div className="rounded-2xl bg-white p-10 text-center text-gray-400 shadow-[0_4px_20px_rgba(19,36,107,0.06)]">
-          Chargement de vos dépôts...
-        </div>
-      )}
+      <div className="relative">
+        {loading && <LoadingScreen fullScreen={false} message="Chargement de vos dépôts..." />}
 
-      {!loading && error && (
-        <div className="rounded-2xl bg-red-50 p-10 text-center text-red-600">{error}</div>
-      )}
+        {!loading && error && (
+          <div className="rounded-2xl bg-red-50 p-10 text-center text-red-600">{error}</div>
+        )}
 
-      {!loading && !error && memoiresFiltres.length === 0 && <EmptyState />}
+        {!loading && !error && memoiresFiltres.length === 0 && <EmptyState />}
 
-      {!loading && !error && memoiresFiltres.length > 0 && (
-        <div className="space-y-4">
-          {memoiresFiltres.map((depot) => (
-            <DepotCard key={depot.id} depot={depot} />
-          ))}
-        </div>
-      )}
+        {!loading && !error && memoiresFiltres.length > 0 && (
+          <div className="space-y-4">
+            {memoiresFiltres.map((depot) => (
+              <DepotCard key={depot.id} depot={depot} />
+            ))}
+          </div>
+        )}
+      </div>
     </EtudiantLayout>
   );
 }

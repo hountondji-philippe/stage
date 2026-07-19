@@ -8,18 +8,10 @@ import HowItWorksSection from "../components/HowItWorksSection";
 import ActualitesAcademiques from "../components/ActualitesAcademiques";
 import CtaFinalSection from "../components/CtaFinalSection";
 import { useAccueilData } from "../hooks/useAccueilData";
-import { LoadingSpinner } from "../../../components/ui/LoadingSpinner"; // Supposé existant
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 
 export default function AccueilPage() {
   const { stats, recentes, loading, error } = useAccueilData();
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -30,35 +22,40 @@ export default function AccueilPage() {
   }
 
   return (
-    <main className="flex flex-col">
-      {/* 1. Hero : Barre de recherche & Image fond */}
-      <HeroSection />
+    <div className="relative">
+      {/* La page reste affichée derrière, floutée, tant que loading est vrai */}
+      {loading && <LoadingScreen message="Chargement de l'accueil..." />}
 
-      {/* 2. Stats : Connecté au backend via stats() */}
-      {/* <StatsSection stats={stats} /> */}
+      <main className="flex flex-col">
+        {/* 1. Hero : Barre de recherche & Image fond */}
+        <HeroSection />
 
-      {/* 3. Filières en vedette (contenu statique, frontend uniquement) */}
-      <FilieresEnVedette />
+        {/* 2. Stats : Connecté au backend via stats() */}
+        {/* <StatsSection stats={stats} /> */}
 
-      {/* 4. Mémoires Récents */}
-      {recentes && recentes.length > 0 && (
-        <RecentMemoiresSection memoires={recentes} />
-      )}
+        {/* 3. Filières en vedette (contenu statique, frontend uniquement) */}
+        <FilieresEnVedette />
 
-      {/* 5. Top mémoires consultés (contenu statique, frontend uniquement) */}
-      <TopMemoiresConsultes />
+        {/* 4. Mémoires Récents */}
+        {recentes && recentes.length > 0 && (
+          <RecentMemoiresSection memoires={recentes} />
+        )}
 
-      {/* 6. Pourquoi choisir MÉMOIRES+ (contenu statique, frontend uniquement) */}
-      <PourquoiChoisir />
+        {/* 5. Top mémoires consultés (contenu statique, frontend uniquement) */}
+        <TopMemoiresConsultes />
 
-      {/* 7. Processus */}
-      <HowItWorksSection />
+        {/* 6. Pourquoi choisir MÉMOIRES+ (contenu statique, frontend uniquement) */}
+        <PourquoiChoisir />
 
-      {/* 8. Actualités académiques (contenu statique, frontend uniquement) */}
-      <ActualitesAcademiques />
+        {/* 7. Processus */}
+        <HowItWorksSection />
 
-      {/* 9. CTA Final */}
-      <CtaFinalSection />
-    </main>
+        {/* 8. Actualités académiques (contenu statique, frontend uniquement) */}
+        <ActualitesAcademiques />
+
+        {/* 9. CTA Final */}
+        <CtaFinalSection />
+      </main>
+    </div>
   );
 }

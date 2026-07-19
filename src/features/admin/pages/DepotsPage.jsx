@@ -4,6 +4,7 @@ import PageHeader from "../components/PageHeader";
 import DepotToolbar from "../components/DepotToolbar";
 import AdminDepotCard from "../components/AdminDepotCard";
 import Pagination from "../components/Pagination";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { getMemoiresEnAttente, getFiliereList } from '../api/adminService';
 
 const PAGE_SIZE = 4; // comme dans la maquette ("Affichage 1-4 sur 8 dépôts")
@@ -99,7 +100,9 @@ export default function DepotsPage() {
       />
 
       {loading ? (
-        <div className="p-10 text-center">Chargement en cours...</div>
+        <div className="relative min-h-[320px]">
+          <LoadingScreen fullScreen={false} message="Chargement en cours..." />
+        </div>
       ) : paginated.length === 0 ? (
         <div className="rounded-2xl border border-outline-variant bg-white p-10 text-center text-gray-400">
           Aucun dépôt ne correspond à ces critères.

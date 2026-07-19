@@ -25,13 +25,15 @@ export default function HeroSection() {
 >
       <div className="absolute inset-0 bg-[var(--color-primary)]/80" /> {/* Calque de couleur */}
 
-      <div className="relative z-10 mx-auto max-w-4xl">
-        <h1 className="mb-6 text-3xl font-extrabold leading-tight text-white md:text-5xl">
-          Consultez et déposez les mémoires de l'ENEAM
+      <div className="relative z-10 mx-auto max-w-5xl">
+        <h1 className="mb-8 text-4xl font-black leading-tight tracking-tight text-white drop-shadow-lg md:text-6xl">
+          Consultez et déposez les mémoires de{" "}
+          <span className="italic text-[var(--color-accent)]">l'ENEAM</span>
         </h1>
-        <p className="mx-auto mb-12 max-w-2xl text-lg text-white/80">
+        <p className="mx-auto mb-12 max-w-3xl text-xl font-medium leading-relaxed text-white/90 drop-shadow-md md:text-2xl">
           La plateforme officielle de centralisation des travaux académiques.
-          Accédez à des milliers de ressources de recherche validées par nos facultés.
+          Accédez à des milliers de ressources de recherche{" "}
+          <span className="italic text-[var(--color-accent)]">validées</span> par nos facultés.
         </p>
 
         <Button variant="accent" className="px-10 py-4 text-lg" onClick={handleDeposer}>

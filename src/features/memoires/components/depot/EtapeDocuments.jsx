@@ -17,9 +17,10 @@ export default function EtapeDocuments({ files, errors, onFileChange, onPrev, on
           onFileRemove={() => onFileChange("memoire", null, null)}
         />
         <FileDropzone
-          label="Preuve de soutenance (PDF)"
-          hint="PDF uniquement, 5 Mo maximum"
+          label="Preuve de soutenance (PDF ou image)"
+          hint="PDF ou image (JPG, PNG), 5 Mo maximum"
           maxSizeMo={5}
+          typesAcceptes={["application/pdf", "image/jpeg", "image/png"]}
           file={files.preuve}
           error={errors.preuve}
           onFileSelect={(file, error) => onFileChange("preuve", file, error)}

@@ -8,6 +8,7 @@ import EtudiantsListe from "../components/EtudiantsListe";
 import EtudiantFormModal from "../components/EtudiantFormModal";
 import ImportModal from "../components/ImportModal";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useEtudiantsAutorises } from "../hooks/useEtudiantsAutorises";
 
 export default function EtudiantsAutorisesPage() {
@@ -114,8 +115,8 @@ export default function EtudiantsAutorisesPage() {
         )}
 
         {loading ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">
-            Chargement...
+          <div className="relative min-h-[320px] rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <LoadingScreen fullScreen={false} message="Chargement..." />
           </div>
         ) : (
           <EtudiantsListe

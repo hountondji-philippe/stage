@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import PdfViewer from "../components/detail/PdfViewer";
 import InfoCard from "../components/detail/InfoCard";
 import SimilarMemoires from "../components/detail/SimilarMemoires";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useMemoireDetail } from "../hooks/useMemoireDetail";
 import { getFichierUrl, getTelechargerUrl } from "../api/rechercheApi";
 import { ROUTES } from "../../../router/paths";
@@ -12,18 +13,14 @@ export default function MemoireDetailPage() {
   const { memoire, similaires, loading, error } = useMemoireDetail(id);
 
   if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center pt-20 text-gray-400">
-        Chargement...
-      </main>
-    );
+    return <LoadingScreen message="Chargement du mémoire..." />;
   }
 
   if (error || !memoire) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 pt-20 text-center">
         <p className="text-red-600">{error || "Ce mémoire est introuvable."}</p>
-        <Link to={ROUTES.recherche} className="text-[var(--color-primary)] hover:underline">
+        <Link to={ROUTES.archive} className="text-[var(--color-primary)] hover:underline">
           Retour à l'archive
         </Link>
       </main>
@@ -39,7 +36,7 @@ export default function MemoireDetailPage() {
           Accueil
         </Link>
         <ChevronRight size={14} />
-        <Link to={ROUTES.recherche} className="transition-colors hover:text-[var(--color-primary)]">
+        <Link to={ROUTES.archive} className="transition-colors hover:text-[var(--color-primary)]">
           Archive de mémoires
         </Link>
         <ChevronRight size={14} />

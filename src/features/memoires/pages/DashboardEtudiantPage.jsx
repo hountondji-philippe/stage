@@ -6,6 +6,7 @@ import StatCard from "../components/StatCard";
 import DepotCard from "../components/DepotCard";
 import EmptyState from "../components/EmptyState";
 import Button from "../../../components/ui/Button";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useMesDepots } from "../hooks/useMesDepots";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
@@ -83,25 +84,25 @@ export default function DashboardEtudiantPage() {
         <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{deleteError}</p>
       )}
 
-      {loading && (
-        <div className="rounded-2xl bg-white p-10 text-center text-gray-400 shadow-[0_4px_20px_rgba(19,36,107,0.06)]">
-          Chargement de vos dépôts...
-        </div>
-      )}
+      <div className="relative">
+        {loading && (
+          <LoadingScreen fullScreen={false} message="Chargement de vos dépôts..." />
+        )}
 
-      {!loading && error && (
-        <div className="rounded-2xl bg-red-50 p-10 text-center text-red-600">{error}</div>
-      )}
+        {!loading && error && (
+          <div className="rounded-2xl bg-red-50 p-10 text-center text-red-600">{error}</div>
+        )}
 
-      {!loading && !error && memoires.length === 0 && <EmptyState />}
+        {!loading && !error && memoires.length === 0 && <EmptyState />}
 
-      {!loading && !error && memoires.length > 0 && (
-        <div className="space-y-4">
-          {memoires.map((depot) => (
-            <DepotCard key={depot.id} depot={depot} onDelete={handleDelete} />
-          ))}
-        </div>
-      )}
+        {!loading && !error && memoires.length > 0 && (
+          <div className="space-y-4">
+            {memoires.map((depot) => (
+              <DepotCard key={depot.id} depot={depot} onDelete={handleDelete} />
+            ))}
+          </div>
+        )}
+      </div>
     </EtudiantLayout>
   );
 }

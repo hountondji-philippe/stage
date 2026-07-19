@@ -5,6 +5,7 @@ import DepotDetailPdfViewer from "../components/DepotDetailPdfViewer";
 import DepotDetailInfoCard from "../components/DepotDetailInfoCard";
 import DepotDetailActions from "../components/DepotDetailActions";
 import StatusBadge from "../../../components/ui/StatusBadge";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useMemoireDetail } from "../hooks/useMemoireDetail";
 
 export default function DepotDetailPage() {
@@ -21,7 +22,9 @@ export default function DepotDetailPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="p-12 text-center text-sm text-gray-500">Chargement du dépôt...</div>
+        <div className="relative min-h-[400px]">
+          <LoadingScreen fullScreen={false} message="Chargement du dépôt..." />
+        </div>
       </AdminLayout>
     );
   }

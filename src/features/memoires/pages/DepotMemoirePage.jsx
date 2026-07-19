@@ -8,6 +8,7 @@ import EtapeDocuments from "../components/depot/EtapeDocuments";
 import EtapeRecapitulatif from "../components/depot/EtapeRecapitulatif";
 import SelectionAuteur from "../components/depot/SelectionAuteur";
 import Button from "../../../components/ui/Button";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useDepotForm } from "../hooks/useDepotForm";
 import { useFilieres } from "../hooks/useFilieres";
 import { ROUTES } from "../../../router/paths";
@@ -75,13 +76,7 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
   }
 
   if (loadingInitial) {
-    return (
-      <Layout>
-        <div className="rounded-2xl bg-white p-10 text-center text-gray-400 shadow-[0_4px_20px_rgba(19,36,107,0.06)]">
-          Chargement du dépôt...
-        </div>
-      </Layout>
-    );
+    return <LoadingScreen message="Chargement du dépôt..." />;
   }
 
   return (

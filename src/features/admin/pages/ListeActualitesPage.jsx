@@ -4,6 +4,7 @@ import ActualitesToolbar from "../components/ActualitesToolbar";
 import ActualitesTable from "../components/ActualitesTable";
 import ActualiteFormModal from "../components/ActualiteFormModal";
 import ConfirmSuppressionActualiteModal from "../components/ConfirmSuppressionActualiteModal";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useActualitesAdmin } from "../hooks/useActualitesAdmin";
 
 export default function ListeActualitesPage() {
@@ -51,8 +52,8 @@ export default function ListeActualitesPage() {
         {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
         {loading ? (
-          <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">
-            Chargement...
+          <div className="relative min-h-[320px] rounded-xl border border-gray-200 bg-white shadow-sm">
+            <LoadingScreen fullScreen={false} message="Chargement..." />
           </div>
         ) : (
           <ActualitesTable

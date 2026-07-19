@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { UploadCloud, FileText, X } from "lucide-react";
+import { UploadCloud, FileText, Image as ImageIcon, X } from "lucide-react";
 
 function formatSize(bytes) {
   if (!bytes) return "";
@@ -7,20 +7,36 @@ function formatSize(bytes) {
 }
 
 /**
- * Zone drag & drop réutilisable pour un fichier PDF unique.
+ * Zone drag & drop réutilisable pour un fichier unique.
  * `file` peut être un objet File natif, ou { name, existing: true }
  * pour représenter un fichier déjà déposé (mode modification).
+ *
+ * @param {string[]} typesAcceptes - MIME types acceptés (défaut : PDF uniquement)
  */
-export default function FileDropzone({ label, hint, file, maxSizeMo, error, onFileSelect, onFileRemove }) {
+export default function FileDropzone({
+  label,
+  hint,
+  file,
+  maxSizeMo,
+  error,
+  onFileSelect,
+  onFileRemove,
+  typesAcceptes = ["application/pdf"],
+}) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
+
+  const estImage = typeof file?.type === "string" && file.type.startsWith("image/");
 
   function handleFiles(fileList) {
     const selected = fileList?.[0];
     if (!selected) return;
 
-    if (selected.type !== "application/pdf") {
-      onFileSelect(null, "Seuls les fichiers PDF sont acceptés.");
+    if (!typesAcceptes.includes(selected.type)) {
+      const libelles = typesAcceptes.includes("application/pdf") && typesAcceptes.length > 1
+        ? "Seuls les fichiers PDF ou image (JPG, PNG) sont acceptés."
+        : "Seuls les fichiers PDF sont acceptés.";
+      onFileSelect(null, libelles);
       return;
     }
     if (maxSizeMo && selected.size > maxSizeMo * 1024 * 1024) {
@@ -63,7 +79,7 @@ export default function FileDropzone({ label, hint, file, maxSizeMo, error, onFi
           <input
             ref={inputRef}
             type="file"
-            accept="application/pdf"
+            accept={typesAcceptes.join(",")}
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
           />
@@ -73,8 +89,12 @@ export default function FileDropzone({ label, hint, file, maxSizeMo, error, onFi
       {file && (
         <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-red-50 text-red-600">
-              <FileText size={20} />
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded ${
+                estImage ? "bg-blue-50 text-blue-600" : "bg-red-50 text-red-600"
+              }`}
+            >
+              {estImage ? <ImageIcon size={20} /> : <FileText size={20} />}
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-[var(--color-text)]">{file.name}</p>
