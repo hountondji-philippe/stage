@@ -1,0 +1,844 @@
+﻿===== app\Http\Controllers\Api\AdminRechercheController.php =====
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Memoire;
+use App\Models\EtudiantAutorise;
+use App\Models\Filiere;
+use Illuminate\Http\Request;
+
+class AdminRechercheController extends Controller
+{
+    public function index(Request $request)
+    {
+        $terme = trim($request->input('q', ''));
+
+        if (mb_strlen($terme) < 2) {
+            return response()->json(['memoires' => [], 'etudiants' => [], 'filieres' => []]);
+        }
+
+        $mots = array_filter(explode(' ', $terme));
+
+        // Mémoires : cherche dans le titre OU le nom de la filière liée
+        $memoires = Memoire::where(function ($q) use ($mots) {
+                foreach ($mots as $mot) {
+                    $q->where(function ($sub) use ($mot) {
+                        $sub->where('titre', 'like', "%{$mot}%")
+                            ->orWhereHas('filiere', function ($f) use ($mot) {
+                                $f->where('nom', 'like', "%{$mot}%");
+                            });
+                    });
+                }
+            })
+            ->with('filiere:id,nom')
+            ->latest()
+            ->limit(5)
+            ->get(['id', 'titre', 'statut', 'filiere_id']);
+
+        // Étudiants : nom, prénom, matricule, email
+        $etudiants = EtudiantAutorise::where(function ($q) use ($mots) {
+                foreach ($mots as $mot) {
+                    $q->where(function ($sub) use ($mot) {
+                        $sub->where('nom', 'like', "%{$mot}%")
+                            ->orWhere('prenom', 'like', "%{$mot}%")
+                            ->orWhere('matricule', 'like', "%{$mot}%")
+                            ->orWhere('email', 'like', "%{$mot}%");
+                    });
+                }
+            })
+            ->limit(5)
+            ->get(['id', 'nom', 'prenom', 'matricule', 'compte_active']);
+
+        // Filières : nom
+        $filieres = Filiere::where(function ($q) use ($mots) {
+                foreach ($mots as $mot) {
+                    $q->where('nom', 'like', "%{$mot}%");
+                }
+            })
+            ->withCount('memoires')
+            ->limit(5)
+            ->get(['id', 'nom']);
+
+        return response()->json([
+            'memoires' => $memoires,
+            'etudiants' => $etudiants,
+            'filieres' => $filieres,
+        ]);
+    }
+}
+
+===== app\Http\Controllers\Api\MemoireController.php =====
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Memoire;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Process;
+use App\Models\EtudiantAutorise;
+use App\Models\Filiere;
+class MemoireController extends Controller
+{
+    public function rechercherPublic(Request $request)
+    {
+        $query = Memoire::valides()->with(['filiere', 'sousFiliere', 'user.etudiantAutorise']);
+
+        if ($request->filled('filiere_id')) {
+            $query->where('filiere_id', $request->filiere_id);
+        }
+
+        if ($request->filled('sous_filiere_id')) {
+            $query->where('sous_filiere_id', $request->sous_filiere_id);
+        }
+
+        if ($request->filled('annee')) {
+            $query->where('annee', $request->annee);
+        }
+        if ($request->filled('cycle')) {
+            $query->where('cycle', $request->cycle);
+        }
+
+        if ($request->filled('recherche')) {
+            $terme = $request->recherche;
+            $query->where(function ($q) use ($terme) {
+                $q->where('titre', 'like', "%{$terme}%")
+                  ->orWhere('resume', 'like', "%{$terme}%");
+            });
+        }
+
+        $tri = $request->input('tri', 'recent');
+    match ($tri) {
+        'ancien' => $query->oldest('valide_le'),
+        'titre' => $query->orderBy('titre'),
+        default => $query->latest('valide_le'),
+    };
+
+$memoires = $query->paginate(12);
+
+        return response()->json($memoires);
+    }
+    
+    public function plusConsultesPublic()
+{
+    $memoires = Memoire::valides()
+        ->with(['filiere', 'sousFiliere', 'user.etudiantAutorise'])
+        ->orderByDesc('views_count')
+        ->limit(10)
+        ->get();
+
+    return response()->json(['memoires' => $memoires]);
+}
+
+
+    public function afficherPublic(Memoire $memoire)
+    {
+        if (!$memoire->estValide()) {
+            return response()->json([
+                'message' => 'Ce mémoire n\'est pas disponible.',
+            ], 404);
+        }
+
+        $memoire->increment('views_count');
+
+        return response()->json([
+            'memoire' => $memoire->load(['filiere', 'sousFiliere', 'user.etudiantAutorise']),
+        ]);
+    }
+
+    public function fichierPublic(Memoire $memoire)
+    {
+        if (!$memoire->estValide()) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response($memoire->fichier_memoire);
+    }
+
+    public function telechargerPublic(Memoire $memoire)
+    {
+        if (!$memoire->estValide()) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->download(
+            $memoire->fichier_memoire,
+            Str::slug($memoire->titre) . '.pdf'
+        );
+    }
+
+    public function mesMemoires(Request $request)
+    {
+        $memoires = $request->user()->memoires()->with(['filiere', 'sousFiliere'])->latest()->get();
+
+        return response()->json(['memoires' => $memoires]);
+    }
+
+    public function monFichier(Request $request, Memoire $memoire, string $type)
+{
+    if ($memoire->user_id !== $request->user()->id) {
+        return response()->json(['message' => 'Action non autorisée.'], 403);
+    }
+
+    if (!in_array($type, ['memoire', 'preuve'])) {
+        abort(404);
+    }
+
+    $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
+
+    return Storage::disk('local')->response($chemin);
+}
+
+  public function monTelechargement(Request $request, Memoire $memoire, string $type)
+{
+    if ($memoire->user_id !== $request->user()->id) {
+        abort(403);
+    }
+
+    $chemin = match ($type) {
+        'memoire' => $memoire->fichier_memoire,
+        'preuve' => $memoire->fichier_preuve,
+        default => abort(404),
+    };
+
+    if (!$chemin) {
+        abort(404);
+    }
+
+    return Storage::disk('local')->download(
+        $chemin,
+        Str::slug($memoire->titre) . '-' . $type . '.pdf'
+    );
+}
+
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'titre' => 'required|string|max:255',
+            'resume' => 'required|string',
+            'filiere_id' => 'required|exists:filieres,id',
+            'sous_filiere_id' => 'nullable|exists:sous_filieres,id',
+            'annee' => 'required|string|max:4',
+            'encadrant' => 'required|string|max:255',
+            'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
+            'fichier_preuve' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'cycle' => 'required|in:licence,master',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Données invalides.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
+        $cheminApercu = null;
+            try {
+                $cheminPdf = Storage::disk('local')->path($cheminMemoire);
+                $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
+                Storage::disk('local')->makeDirectory('apercus');
+                $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
+
+                $resultat = Process::run([
+                    config('app.ghostscript_path'),
+                    '-dNOPAUSE',
+                    '-dBATCH',
+                    '-sDEVICE=jpeg',
+                    '-r100',
+                    '-dFirstPage=1',
+                    '-dLastPage=1',
+                    '-sOutputFile=' . $cheminApercuComplet,
+                    $cheminPdf,
+                ]);
+
+                if ($resultat->successful() && file_exists($cheminApercuComplet)) {
+                    $cheminApercu = $nomApercu;
+                }
+            } catch (\Exception $e) {
+                $cheminApercu = null;
+            }
+        $cheminPreuve = $request->file('fichier_preuve')->store('preuves', 'local');
+
+        $memoire = Memoire::create([
+            'user_id' => $request->user()->id,
+            'titre' => $request->titre,
+            'resume' => $request->resume,
+            'filiere_id' => $request->filiere_id,
+            'sous_filiere_id' => $request->sous_filiere_id,
+            'annee' => $request->annee,
+            'encadrant' => $request->encadrant,
+            'fichier_memoire' => $cheminMemoire,
+            'fichier_preuve' => $cheminPreuve,
+            'statut' => 'en_attente',
+            'apercu' => $cheminApercu,
+            'cycle' => $request->cycle,
+        ]);
+
+        return response()->json([
+            'message' => 'Mémoire déposé avec succès. Il sera examiné par l\'administration.',
+            'memoire' => $memoire,
+        ], 201);
+    }
+
+
+    public function storeAdmin(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'titre' => 'required|string|max:255',
+        'resume' => 'required|string',
+        'filiere_id' => 'required|exists:filieres,id',
+        'sous_filiere_id' => 'nullable|exists:sous_filieres,id',
+        'annee' => 'required|string|max:4',
+        'encadrant' => 'required|string|max:255',
+        'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
+        'fichier_preuve' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'cycle' => 'required|in:licence,master',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Données invalides.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
+    $cheminApercu = null;
+    try {
+        $cheminPdf = Storage::disk('local')->path($cheminMemoire);
+        $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
+        Storage::disk('local')->makeDirectory('apercus');
+        $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
+
+        $resultat = Process::run([
+            config('app.ghostscript_path'),
+            '-dNOPAUSE', '-dBATCH', '-sDEVICE=jpeg', '-r100',
+            '-dFirstPage=1', '-dLastPage=1',
+            '-sOutputFile=' . $cheminApercuComplet,
+            $cheminPdf,
+        ]);
+
+        if ($resultat->successful() && file_exists($cheminApercuComplet)) {
+            $cheminApercu = $nomApercu;
+        }
+    } catch (\Exception $e) {
+        $cheminApercu = null;
+    }
+
+    $cheminPreuve = $request->file('fichier_preuve')->store('preuves', 'local');
+
+    $memoire = Memoire::create([
+        'user_id' => $request->user()->id,
+        'titre' => $request->titre,
+        'resume' => $request->resume,
+        'filiere_id' => $request->filiere_id,
+        'sous_filiere_id' => $request->sous_filiere_id,
+        'annee' => $request->annee,
+        'encadrant' => $request->encadrant,
+        'fichier_memoire' => $cheminMemoire,
+        'fichier_preuve' => $cheminPreuve,
+        'statut' => 'valide',
+        'apercu' => $cheminApercu,
+        'cycle' => $request->cycle,
+        'valide_par' => $request->user()->id,
+        'valide_le' => now(),
+    ]);
+
+    return response()->json([
+        'message' => 'Mémoire ajouté et publié avec succès.',
+        'memoire' => $memoire,
+    ], 201);
+}
+
+
+public function update(Request $request, Memoire $memoire)
+{
+    if ($memoire->user_id !== $request->user()->id) {
+        return response()->json(['message' => 'Action non autorisée.'], 403);
+    }
+
+    if ($memoire->estValide()) {
+        return response()->json([
+            'message' => 'Un mémoire déjà validé ne peut plus être modifié.',
+        ], 409);
+    }
+
+    $validator = Validator::make($request->all(), [
+        'titre' => 'sometimes|string|max:255',
+        'resume' => 'sometimes|string',
+        'filiere_id' => 'sometimes|exists:filieres,id',
+        'sous_filiere_id' => 'sometimes|nullable|exists:sous_filieres,id',
+        'annee' => 'sometimes|string|max:4',
+        'cycle' => 'sometimes|in:licence,master',
+        'encadrant' => 'sometimes|string|max:255',
+        'fichier_memoire' => 'sometimes|file|mimes:pdf|max:10240',
+        'fichier_preuve' => 'sometimes|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Données invalides.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $donnees = $request->only(['titre', 'resume', 'filiere_id', 'sous_filiere_id', 'annee', 'cycle', 'encadrant']);
+
+    if ($request->hasFile('fichier_memoire')) {
+        Storage::disk('local')->delete($memoire->fichier_memoire);
+        $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 'local');
+    }
+
+    if ($request->hasFile('fichier_preuve')) {
+        Storage::disk('local')->delete($memoire->fichier_preuve);
+        $donnees['fichier_preuve'] = $request->file('fichier_preuve')->store('preuves', 'local');
+    }
+
+    // Si le mémoire était rejeté, la correction le renvoie en attente de validation
+    if ($memoire->statut === 'rejete') {
+        $donnees['statut'] = 'en_attente';
+        $donnees['motif_rejet'] = null;
+        $donnees['valide_par'] = null;
+        $donnees['valide_le'] = null;
+    }
+
+    $memoire->update($donnees);
+
+    return response()->json([
+        'message' => $memoire->statut === 'en_attente' && $memoire->wasChanged('statut')
+            ? 'Mémoire corrigé et renvoyé pour validation.'
+            : 'Mémoire mis à jour avec succès.',
+        'memoire' => $memoire,
+    ]);
+}
+
+    public function destroy(Request $request, Memoire $memoire)
+    {
+        if ($memoire->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Action non autorisée.'], 403);
+        }
+
+        if (!$memoire->estEnAttente()) {
+            return response()->json([
+                'message' => 'Seul un mémoire en attente peut être supprimé.',
+            ], 409);
+        }
+
+        Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
+        $memoire->delete();
+
+        return response()->json([
+            'message' => 'Mémoire supprimé avec succès.',
+        ]);
+    }
+
+    public function enAttenteAdmin()
+    {
+        $memoires = Memoire::enAttente()->with(['filiere', 'sousFiliere', 'user.etudiantAutorise'])->latest()->get();
+
+        return response()->json(['memoires' => $memoires]);
+    }
+
+    public function fichierAdmin(Memoire $memoire, string $type)
+    {
+        if (!in_array($type, ['memoire', 'preuve'])) {
+            abort(404);
+        }
+
+        $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
+
+        return Storage::disk('local')->response($chemin);
+    }
+
+    public function valider(Request $request, Memoire $memoire)
+    {
+        if (!$memoire->estEnAttente()) {
+            return response()->json([
+                'message' => 'Ce mémoire a déjà été traité.',
+            ], 409);
+        }
+
+        $memoire->update([
+            'statut' => 'valide',
+            'valide_par' => $request->user()->id,
+            'valide_le' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Mémoire validé et publié.',
+            'memoire' => $memoire,
+        ]);
+    }
+
+    public function rejeter(Request $request, Memoire $memoire)
+    {
+        $validator = Validator::make($request->all(), [
+            'motif_rejet' => 'required|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Le motif de rejet est obligatoire.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if (!$memoire->estEnAttente()) {
+            return response()->json([
+                'message' => 'Ce mémoire a déjà été traité.',
+            ], 409);
+        }
+
+        $memoire->update([
+            'statut' => 'rejete',
+            'motif_rejet' => $request->motif_rejet,
+            'valide_par' => $request->user()->id,
+            'valide_le' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Mémoire rejeté.',
+            'memoire' => $memoire,
+        ]);
+    }
+
+    public function stats()
+    {
+        $total = Memoire::count();
+        $enAttente = Memoire::where('statut', 'en_attente')->count();
+        $valide = Memoire::where('statut', 'valide')->count();
+        $rejete = Memoire::where('statut', 'rejete')->count();
+
+        $parFiliere = Memoire::selectRaw('filiere_id, count(*) as total')
+            ->groupBy('filiere_id')
+            ->with('filiere:id,nom')
+            ->orderByDesc('total')
+            ->limit(6)
+            ->get()
+            ->map(fn ($item) => [
+                'nom' => $item->filiere->nom ?? 'Non définie',
+                'total' => $item->total,
+            ]);
+
+        return response()->json([
+            'total' => $total,
+            'en_attente' => $enAttente,
+            'valide' => $valide,
+            'rejete' => $rejete,
+            'par_filiere' => $parFiliere,
+        ]);
+    }
+
+    public function tousAdmin(Request $request)
+    {
+        $query = Memoire::with(['filiere', 'sousFiliere', 'user.etudiantAutorise']);
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        $memoires = $query->latest()->paginate(15);
+
+        return response()->json($memoires);
+    }
+
+
+     public function showAdmin(Memoire $memoire)
+{
+    return response()->json([
+        'memoire' => $memoire->load(['filiere', 'sousFiliere', 'user.etudiantAutorise']),
+    ]);
+}
+    public function supprimerAdmin(Memoire $memoire)
+    {
+        Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
+        $memoire->delete();
+
+        return response()->json([
+            'message' => 'Mémoire supprimé définitivement.',
+        ]);
+    }
+     public function apercuPublic(Memoire $memoire)
+        {
+            if (!$memoire->estValide() || !$memoire->apercu) {
+                abort(404);
+            }
+
+            return Storage::disk('local')->response($memoire->apercu);
+        }
+        public function statsPubliques()
+{
+    return response()->json([
+        'memoires_deposes' => Memoire::where('statut', 'valide')->count(),
+        'filieres_couvertes' => Filiere::count(),
+        'etudiants_inscrits' => EtudiantAutorise::where('compte_active', true)->count(),
+    ]);
+}
+}
+
+===== app\Models\Memoire.php =====
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Memoire extends Model
+{
+    protected $fillable = [
+        'user_id',
+        'titre',
+        'resume',
+        'filiere_id',
+        'sous_filiere_id',
+        'annee',
+        'cycle',
+        'encadrant',
+        'fichier_memoire',
+        'apercu',
+        'fichier_preuve',
+        'statut',
+        'motif_rejet',
+        'valide_par',
+        'valide_le',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'valide_le' => 'datetime',
+            'views_count' => 'integer',
+        ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function filiere(): BelongsTo
+    {
+        return $this->belongsTo(Filiere::class);
+    }
+
+    public function validateur(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'valide_par');
+    }
+
+    public function estValide(): bool
+    {
+        return $this->statut === 'valide';
+    }
+     
+        public function sousFiliere(): BelongsTo
+    {
+        return $this->belongsTo(SousFiliere::class);
+    }
+    
+    public function estEnAttente(): bool
+    {
+        return $this->statut === 'en_attente';
+    }
+
+    public function scopeValides($query)
+    {
+        return $query->where('statut', 'valide');
+    }
+
+    public function scopeEnAttente($query)
+    {
+        return $query->where('statut', 'en_attente');
+    }
+}
+
+===== app\Models\EtudiantAutorise.php =====
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+class EtudiantAutorise extends Model
+{
+    protected $table = 'etudiants_autorises';
+
+    protected $fillable = [
+        'matricule',
+        'email',
+        'nom',
+        'prenom',
+        'filiere_id',
+        'annee_scolaire',
+        'niveau',
+        'compte_active',
+        'token_activation',
+        'token_expires_at',
+    ];
+
+    protected $hidden = [
+        'token_activation',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'compte_active' => 'boolean',
+            'token_expires_at' => 'datetime',
+        ];
+    }
+
+    public function filiere(): BelongsTo
+    {
+        return $this->belongsTo(Filiere::class);
+    }
+
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class);
+    }
+}
+
+===== database\migrations\2026_07_13_090858_create_memoires_table.php =====
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('memoires', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained('users');
+            $table->string('titre');
+            $table->text('resume');
+            $table->foreignId('filiere_id')->constrained('filieres');
+            $table->string('annee');
+            $table->string('encadrant');
+            $table->string('fichier_memoire');
+            $table->string('fichier_preuve');
+            $table->enum('statut', ['en_attente', 'valide', 'rejete'])->default('en_attente');
+            $table->text('motif_rejet')->nullable();
+            $table->foreignId('valide_par')->nullable()->constrained('users');
+            $table->timestamp('valide_le')->nullable();
+            $table->unsignedInteger('views_count')->default(0);
+            $table->timestamps();
+
+            $table->index(['statut', 'filiere_id', 'annee']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('memoires');
+    }
+};
+
+===== database\migrations\2026_07_17_094217_add_apercu_and_cycle_to_memoires_table.php =====
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('memoires', function (Blueprint $table) {
+            $table->string('apercu')->nullable()->after('fichier_memoire');
+            $table->enum('cycle', ['licence', 'master'])->nullable()->after('annee');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('memoires', function (Blueprint $table) {
+            $table->dropColumn(['apercu', 'cycle']);
+        });
+    }
+};
+
+===== routes\api.php =====
+<?php
+
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\MemoireController;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\EtudiantAutoriseController;
+use App\Http\Controllers\Api\FiliereController;
+use App\Http\Controllers\Api\SousFiliereController;
+use App\Http\Controllers\Api\ActualiteController;
+use App\Http\Controllers\Api\AdminRechercheController;
+
+Route::post('/auth/verifier-matricule', [AuthController::class, 'verifierMatricule']);
+Route::post('/auth/activer-compte', [AuthController::class, 'activerCompte']);
+Route::post('/auth/renvoyer-lien', [AuthController::class, 'renvoyerLien']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/mot-de-passe-oublie', [AuthController::class, 'demanderReinitialisation']);
+Route::post('/auth/reinitialiser-mot-de-passe', [AuthController::class, 'reinitialiserMotDePasse']);
+Route::post('/admin/etudiants-autorises/importer', [EtudiantAutoriseController::class, 'importer']);
+Route::get('/stats-publiques', [MemoireController::class, 'statsPubliques']);
+
+Route::get('/admin/stats', [MemoireController::class, 'stats']);
+Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
+Route::get('/memoires/publics/{memoire}', [MemoireController::class, 'afficherPublic']);
+Route::get('/memoires/{memoire}/fichier', [MemoireController::class, 'fichierPublic']);
+Route::get('/memoires/{memoire}/telecharger', [MemoireController::class, 'telechargerPublic']);
+Route::get('/filieres', [FiliereController::class, 'index']);
+Route::get('/sous-filieres', [SousFiliereController::class, 'index']);
+Route::get('/memoires/{memoire}/apercu', [MemoireController::class, 'apercuPublic']);
+Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
+Route::get('/memoires/plus-consultes', [MemoireController::class, 'plusConsultesPublic']);
+Route::get('/actualites', [ActualiteController::class, 'index']);
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::put('/auth/mot-de-passe', [AuthController::class, 'changerMotDePasse']);
+    Route::post('/auth/changer-mot-de-passe', [AuthController::class, 'changerMotDePasse']);
+    Route::get('/memoires/mes-memoires', [MemoireController::class, 'mesMemoires']);
+    Route::get('/mes-memoires/{memoire}/fichier/{type}', [MemoireController::class, 'monFichier']);
+    Route::get('/mes-memoires/{memoire}/telecharger/{type}', [MemoireController::class, 'monTelechargement']);
+    Route::get('/memoires/{memoire}/mon-telechargement/{type}', [MemoireController::class, 'monTelechargement']);
+    Route::post('/memoires', [MemoireController::class, 'store']);
+    Route::put('/memoires/{memoire}', [MemoireController::class, 'update']);
+    Route::delete('/memoires/{memoire}', [MemoireController::class, 'destroy']);
+
+    Route::middleware('admin')->group(function () {
+        Route::get('/admin/memoires/en-attente', [MemoireController::class, 'enAttenteAdmin']);
+        Route::get('/admin/memoires', [MemoireController::class, 'tousAdmin']);
+        Route::post('/admin/memoires', [MemoireController::class, 'storeAdmin']);
+        Route::get('/admin/memoires/{memoire}/fichier/{type}', [MemoireController::class, 'fichierAdmin']);
+        Route::post('/admin/memoires/{memoire}/valider', [MemoireController::class, 'valider']);
+        Route::post('/admin/memoires/{memoire}/rejeter', [MemoireController::class, 'rejeter']);
+        Route::delete('/admin/memoires/{memoire}', [MemoireController::class, 'supprimerAdmin']);
+        Route::get('/admin/recherche-globale', [AdminRechercheController::class, 'index']);
+        Route::get('/admin/memoires/{memoire}', [MemoireController::class, 'showAdmin']);
+        Route::apiResource('/admin/etudiants-autorises', EtudiantAutoriseController::class)
+            ->parameters(['etudiants-autorises' => 'etudiantAutorise']);
+        
+            Route::apiResource('/admin/actualites', ActualiteController::class)
+            ->except(['index', 'show']);
+
+        Route::apiResource('/admin/filieres', FiliereController::class)
+            ->except(['index', 'show']);
+
+        Route::apiResource('/admin/sous-filieres', SousFiliereController::class)
+            ->except(['index', 'show']);
+    });
+});
+

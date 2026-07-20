@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\FiliereController;
 use App\Http\Controllers\Api\SousFiliereController;
 use App\Http\Controllers\Api\ActualiteController;
 use App\Http\Controllers\Api\AdminRechercheController;
+use App\Http\Controllers\Api\RechercheController;
 
 Route::post('/auth/verifier-matricule', [AuthController::class, 'verifierMatricule']);
 Route::post('/auth/activer-compte', [AuthController::class, 'activerCompte']);
@@ -17,6 +18,7 @@ Route::post('/auth/mot-de-passe-oublie', [AuthController::class, 'demanderReinit
 Route::post('/auth/reinitialiser-mot-de-passe', [AuthController::class, 'reinitialiserMotDePasse']);
 Route::post('/admin/etudiants-autorises/importer', [EtudiantAutoriseController::class, 'importer']);
 Route::get('/stats-publiques', [MemoireController::class, 'statsPubliques']);
+Route::get('/recherche-globale', [RechercheController::class, 'index']);
 
 Route::get('/admin/stats', [MemoireController::class, 'stats']);
 Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);

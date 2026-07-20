@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Process;
 use App\Models\EtudiantAutorise;
 use App\Models\Filiere;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 class MemoireController extends Controller
 {
     public function rechercherPublic(Request $request)
@@ -145,74 +147,114 @@ $memoires = $query->paginate(12);
 }
 
     public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'titre' => 'required|string|max:255',
-            'resume' => 'required|string',
-            'filiere_id' => 'required|exists:filieres,id',
-            'sous_filiere_id' => 'nullable|exists:sous_filieres,id',
-            'annee' => 'required|string|max:4',
-            'encadrant' => 'required|string|max:255',
-            'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
-            'fichier_preuve' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'cycle' => 'required|in:licence,master',
-        ]);
+{
+    $validator = Validator::make($request->all(), [
+        'titre' => 'required|string|max:255',
+        'resume' => 'required|string',
+        'filiere_id' => 'required|exists:filieres,id',
+        'sous_filiere_id' => 'nullable|exists:sous_filieres,id',
+        'annee' => 'required|string|max:4',
+        'encadrant' => 'required|string|max:255',
+        'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
+        'cycle' => 'required|in:licence,master',
+        'mode_depot' => 'required|in:unique,binome',
+        'matricule_binome' => 'required_if:mode_depot,binome|nullable|string|exists:etudiants_autorises,matricule',
+    ]);
 
-        if ($validator->fails()) {
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Données invalides.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $etudiant1 = $request->user()->etudiantAutorise;
+    $nomBinome = null;
+    $prenomBinome = null;
+
+    if ($request->mode_depot === 'binome') {
+        if ($request->matricule_binome === ($etudiant1->matricule ?? null)) {
             return response()->json([
-                'message' => 'Données invalides.',
-                'errors' => $validator->errors(),
+                'message' => 'Le matricule du binôme ne peut pas être le vôtre.',
             ], 422);
         }
 
-        $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
-        $cheminApercu = null;
-            try {
-                $cheminPdf = Storage::disk('local')->path($cheminMemoire);
-                $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
-                Storage::disk('local')->makeDirectory('apercus');
-                $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
+        $etudiantBinome = EtudiantAutorise::where('matricule', $request->matricule_binome)->first();
 
-                $resultat = Process::run([
-                    config('app.ghostscript_path'),
-                    '-dNOPAUSE',
-                    '-dBATCH',
-                    '-sDEVICE=jpeg',
-                    '-r100',
-                    '-dFirstPage=1',
-                    '-dLastPage=1',
-                    '-sOutputFile=' . $cheminApercuComplet,
-                    $cheminPdf,
-                ]);
+        if (!$etudiantBinome || !$etudiantBinome->compte_active) {
+            return response()->json([
+                'message' => 'Ce matricule ne correspond à aucun étudiant autorisé actif.',
+            ], 422);
+        }
 
-                if ($resultat->successful() && file_exists($cheminApercuComplet)) {
-                    $cheminApercu = $nomApercu;
-                }
-            } catch (\Exception $e) {
-                $cheminApercu = null;
-            }
-        $cheminPreuve = $request->file('fichier_preuve')->store('preuves', 'local');
+        $nomBinome = $etudiantBinome->nom;
+        $prenomBinome = $etudiantBinome->prenom;
+    }
 
-        $memoire = Memoire::create([
-            'user_id' => $request->user()->id,
-            'titre' => $request->titre,
-            'resume' => $request->resume,
-            'filiere_id' => $request->filiere_id,
-            'sous_filiere_id' => $request->sous_filiere_id,
-            'annee' => $request->annee,
-            'encadrant' => $request->encadrant,
-            'fichier_memoire' => $cheminMemoire,
-            'fichier_preuve' => $cheminPreuve,
-            'statut' => 'en_attente',
-            'apercu' => $cheminApercu,
-            'cycle' => $request->cycle,
+    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
+    $cheminApercu = null;
+    try {
+        $cheminPdf = Storage::disk('local')->path($cheminMemoire);
+        $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
+        Storage::disk('local')->makeDirectory('apercus');
+        $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
+
+        $resultat = Process::run([
+            config('app.ghostscript_path'),
+            '-dNOPAUSE', '-dBATCH', '-sDEVICE=jpeg', '-r100',
+            '-dFirstPage=1', '-dLastPage=1',
+            '-sOutputFile=' . $cheminApercuComplet,
+            $cheminPdf,
         ]);
 
-        return response()->json([
-            'message' => 'Mémoire déposé avec succès. Il sera examiné par l\'administration.',
-            'memoire' => $memoire,
-        ], 201);
+        if ($resultat->successful() && file_exists($cheminApercuComplet)) {
+            $cheminApercu = $nomApercu;
+        }
+    } catch (\Exception $e) {
+        $cheminApercu = null;
     }
+
+    $memoire = Memoire::create([
+        'user_id' => $request->user()->id,
+        'titre' => $request->titre,
+        'resume' => $request->resume,
+        'filiere_id' => $request->filiere_id,
+        'sous_filiere_id' => $request->sous_filiere_id,
+        'annee' => $request->annee,
+        'encadrant' => $request->encadrant,
+        'fichier_memoire' => $cheminMemoire,
+        'statut' => 'en_attente',
+        'apercu' => $cheminApercu,
+        'cycle' => $request->cycle,
+        'mode_depot' => $request->mode_depot,
+        'matricule_binome' => $request->mode_depot === 'binome' ? $request->matricule_binome : null,
+        'nom_binome' => $nomBinome,
+        'prenom_binome' => $prenomBinome,
+    ]);
+
+    // Génère automatiquement la fiche de dépôt (remplace l'ancienne preuve téléversée)
+    $cheminFiche = $this->genererFicheDepot($memoire, $etudiant1);
+    $memoire->update(['fichier_preuve' => $cheminFiche]);
+
+    return response()->json([
+        'message' => 'Mémoire déposé avec succès. Il sera examiné par l\'administration.',
+        'memoire' => $memoire,
+    ], 201);
+}
+
+private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant1): string
+{
+    Storage::disk('local')->makeDirectory('fiches');
+    $nomFichier = 'fiches/' . Str::random(40) . '.pdf';
+    $cheminComplet = Storage::disk('local')->path($nomFichier);
+
+    Pdf::loadView('pdf.fiche-depot', [
+        'memoire' => $memoire,
+        'etudiant1' => $etudiant1,
+    ])->save($cheminComplet);
+
+    return $nomFichier;
+}
 
 
     public function storeAdmin(Request $request)
@@ -225,7 +267,6 @@ $memoires = $query->paginate(12);
         'annee' => 'required|string|max:4',
         'encadrant' => 'required|string|max:255',
         'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
-        'fichier_preuve' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         'cycle' => 'required|in:licence,master',
     ]);
 
@@ -259,7 +300,6 @@ $memoires = $query->paginate(12);
         $cheminApercu = null;
     }
 
-    $cheminPreuve = $request->file('fichier_preuve')->store('preuves', 'local');
 
     $memoire = Memoire::create([
         'user_id' => $request->user()->id,
@@ -306,7 +346,6 @@ public function update(Request $request, Memoire $memoire)
         'cycle' => 'sometimes|in:licence,master',
         'encadrant' => 'sometimes|string|max:255',
         'fichier_memoire' => 'sometimes|file|mimes:pdf|max:10240',
-        'fichier_preuve' => 'sometimes|file|mimes:pdf,jpg,jpeg,png|max:5120',
     ]);
 
     if ($validator->fails()) {
@@ -323,11 +362,6 @@ public function update(Request $request, Memoire $memoire)
         $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 'local');
     }
 
-    if ($request->hasFile('fichier_preuve')) {
-        Storage::disk('local')->delete($memoire->fichier_preuve);
-        $donnees['fichier_preuve'] = $request->file('fichier_preuve')->store('preuves', 'local');
-    }
-
     // Si le mémoire était rejeté, la correction le renvoie en attente de validation
     if ($memoire->statut === 'rejete') {
         $donnees['statut'] = 'en_attente';
@@ -337,6 +371,14 @@ public function update(Request $request, Memoire $memoire)
     }
 
     $memoire->update($donnees);
+
+
+    if ($request->hasFile('fichier_memoire') || $memoire->wasChanged(['titre', 'encadrant', 'filiere_id', 'cycle'])) {
+    $etudiant1 = $request->user()->etudiantAutorise;
+    Storage::disk('local')->delete($memoire->fichier_preuve);
+    $cheminFiche = $this->genererFicheDepot($memoire, $etudiant1);
+    $memoire->update(['fichier_preuve' => $cheminFiche]);
+}
 
     return response()->json([
         'message' => $memoire->statut === 'en_attente' && $memoire->wasChanged('statut')

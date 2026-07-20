@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             FiliereSeeder::class,
             EtudiantAutoriseSeeder::class,
             AdminSeeder::class,
+            ActualiteSeeder::class,
         ]);
     }
 }

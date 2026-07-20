@@ -7,23 +7,33 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Memoire extends Model
 {
-    protected $fillable = [
-        'user_id',
-        'titre',
-        'resume',
-        'filiere_id',
-        'sous_filiere_id',
-        'annee',
-        'cycle',
-        'encadrant',
-        'fichier_memoire',
-        'apercu',
-        'fichier_preuve',
-        'statut',
-        'motif_rejet',
-        'valide_par',
-        'valide_le',
-    ];
+    ===== app\Models\Memoire.php (extrait à modifier) =====
+protected $fillable = [
+    'user_id',
+    'titre',
+    'resume',
+    'filiere_id',
+    'sous_filiere_id',
+    'annee',
+    'cycle',
+    'encadrant',
+    'fichier_memoire',
+    'apercu',
+    'fichier_preuve',
+    'statut',
+    'motif_rejet',
+    'valide_par',
+    'valide_le',
+    'mode_depot',
+    'matricule_binome',
+    'nom_binome',
+    'prenom_binome',
+];
+
+public function estBinome(): bool
+{
+    return $this->mode_depot === 'binome';
+}
 
     protected function casts(): array
     {
