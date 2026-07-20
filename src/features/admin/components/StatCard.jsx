@@ -11,7 +11,7 @@ export default function StatCard({ label, value, icon: Icon, accentColor = "#fff
     >
       <Icon size={32} strokeWidth={1.75} style={{ color: accentColor }} />
       <h3 className="text-xl font-extrabold text-white">{value}</h3>
-      <p className="text-[10px] font-medium uppercase tracking-wide text-[#B9C3FF]">{label}</p>
+      <p className="text-[10px] font-medium uppercase tracking-wide text-white/60">{label}</p>
     </div>
   );
 }

@@ -105,3 +105,9 @@ export async function importEtudiants(file) {
   });
   return data;
 }
+
+
+export async function getEtudiant(id) {
+  const { data } = await apiClient.get(`${BASE_URL}/${id}`);
+  return data.etudiant;
+}

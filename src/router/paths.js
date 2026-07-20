@@ -23,5 +23,5 @@ depotsEnAttenteAdmin: "/admin/depots-en-attente",
 etudiantsAutorisesAdmin: "/admin/etudiants-autorises",
 memoireDetailAdmin: (id) => `/admin/memoires/${id}`,
 memoiresListeAdmin: "/admin/memoires",
-
+etudiantDetailAdmin: (id) => `/admin/etudiants-autorises/${id}`,
 };

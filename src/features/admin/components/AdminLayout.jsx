@@ -12,13 +12,13 @@ import {
   BarChart3,
   LogOut,
   Bell,
-  Search,
   ChevronDown,
   GraduationCap,
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
 import LogoutConfirmModal from "../../../components/ui/LogoutConfirmModal";
+import GlobalSearch from "./GlobalSearch";
 
 // ⚠️ "Liste des mémoires", "Statistiques" n'ont pas encore de page/route
 // dédiée. Laissés ici en dur pour préparer la nav — remplace par
@@ -100,14 +100,7 @@ export default function AdminLayout({ children }) {
 
       {/* Header — même style que EtudiantLayout, agrandi (h-20) */}
       <header className="fixed left-0 right-0 top-0 z-40 flex h-20 items-center justify-between border-b border-gray-200 bg-white px-6 md:left-[280px]">
-        <div className="relative w-full max-w-sm">
-          <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher un dossier, un étudiant..."
-            className="w-full rounded-xl border border-gray-200 bg-[var(--color-bg)] py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]/40"
-          />
-        </div>
+        <GlobalSearch />
 
         <div className="flex items-center gap-4">
           <button

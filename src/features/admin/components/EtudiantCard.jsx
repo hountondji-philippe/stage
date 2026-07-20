@@ -1,5 +1,7 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import StatusBadge from "../../../components/ui/StatusBadge";
+import { ROUTES } from "../../../router/paths";
 
 export default function EtudiantCard({ etudiant, isSelected, onToggleSelected, onEdit, onDeleteOne }) {
   return (
@@ -22,9 +24,12 @@ export default function EtudiantCard({ etudiant, isSelected, onToggleSelected, o
             <span className="text-xs text-gray-400">{etudiant.matricule}</span>
           </div>
 
-          <p className="text-lg font-bold text-[var(--color-primary)]">
+          <Link
+            to={ROUTES.etudiantDetailAdmin(etudiant.id)}
+            className="text-lg font-bold text-[var(--color-primary)] hover:underline"
+          >
             {etudiant.nom} {etudiant.prenom}
-          </p>
+          </Link>
 
           <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-500">
             <span>{etudiant.email}</span>
@@ -35,6 +40,13 @@ export default function EtudiantCard({ etudiant, isSelected, onToggleSelected, o
       </div>
 
       <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+        <Link
+          to={ROUTES.etudiantDetailAdmin(etudiant.id)}
+          className="rounded-full p-2 text-gray-500 transition-colors hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]"
+          aria-label="Voir le détail"
+        >
+          <Eye size={18} />
+        </Link>
         <button
           onClick={() => onEdit(etudiant)}
           className="rounded-full p-2 text-gray-500 transition-colors hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]"

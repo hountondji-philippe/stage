@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import AdminLayout from "../components/AdminLayout";
 import FilieresToolbar from "../components/FilieresToolbar";
 import FilieresTable from "../components/FilieresTable";
@@ -9,6 +10,7 @@ import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useFilieresAdmin } from "../hooks/useFilieresAdmin";
 
 export default function ListeFilierePage() {
+  const location = useLocation();
   const { filieres, loading, error, refetch, addFiliere, editFiliere, removeFiliere } =
     useFilieresAdmin();
 
@@ -17,6 +19,19 @@ export default function ListeFilierePage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+
+  // --- AJOUT : ouvre automatiquement la modale d'édition si on arrive
+  // depuis la recherche globale, via navigate("/admin/filieres", { state: { filiereIdAOuvrir } })
+  useEffect(() => {
+    const idCible = location.state?.filiereIdAOuvrir;
+    if (!idCible || loading || filieres.length === 0) return;
+
+    const filiere = filieres.find((f) => String(f.id) === String(idCible));
+    if (filiere) {
+      setFormModal({ open: true, filiere });
+    }
+  }, [location.state, loading, filieres]);
+  // --- FIN AJOUT ---
 
   function openAddModal() {
     setFormModal({ open: true, filiere: null });

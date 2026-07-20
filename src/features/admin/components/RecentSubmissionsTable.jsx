@@ -19,7 +19,7 @@ export default function RecentSubmissionsTable({ memoires }) {
       <div className="flex items-center justify-between border-b border-white/10 p-5">
         <div>
           <h4 className="text-base font-bold text-white">Dépôts en attente récents</h4>
-          <p className="text-sm text-[#B9C3FF]">{memoires.length} nouveau(x) mémoire(s) à examiner.</p>
+          <p className="text-sm text-white/60">{memoires.length} nouveau(x) mémoire(s) à examiner.</p>
         </div>
         <button
           onClick={() => navigate("/admin/depots-en-attente")}
@@ -31,15 +31,15 @@ export default function RecentSubmissionsTable({ memoires }) {
 
       <div className="max-h-[400px] flex-1 overflow-y-auto">
         {recents.length === 0 ? (
-          <div className="p-8 text-center text-sm text-[#B9C3FF]">Aucun dépôt en attente.</div>
+          <div className="p-8 text-center text-sm text-white/60">Aucun dépôt en attente.</div>
         ) : (
           <table className="w-full text-left">
             <thead className="sticky top-0 bg-[var(--color-primary)]">
               <tr>
-                <th className="px-5 py-3 text-xs font-bold uppercase tracking-wide text-[#B9C3FF]">Titre</th>
-                <th className="px-5 py-3 text-xs font-bold uppercase tracking-wide text-[#B9C3FF]">Auteur</th>
-                <th className="px-5 py-3 text-xs font-bold uppercase tracking-wide text-[#B9C3FF]">Date</th>
-                <th className="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-[#B9C3FF]">
+                <th className="px-5 py-3 text-xs font-bold uppercase tracking-wide text-white/60">Titre</th>
+                <th className="px-5 py-3 text-xs font-bold uppercase tracking-wide text-white/60">Auteur</th>
+                <th className="px-5 py-3 text-xs font-bold uppercase tracking-wide text-white/60">Date</th>
+                <th className="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-white/60">
                   Action
                 </th>
               </tr>
@@ -51,8 +51,8 @@ export default function RecentSubmissionsTable({ memoires }) {
                     <p className="line-clamp-1 text-sm font-bold text-white">{m.titre}</p>
                     <p className="text-xs font-semibold text-[var(--color-accent)]">{m.filiere?.nom}</p>
                   </td>
-                  <td className="px-5 py-4 text-sm text-[#B9C3FF]">{nomAuteur(m)}</td>
-                  <td className="px-5 py-4 text-sm italic text-[#B9C3FF]">{formatDate(m.created_at)}</td>
+                  <td className="px-5 py-4 text-sm text-white/60">{nomAuteur(m)}</td>
+                  <td className="px-5 py-4 text-sm italic text-white/60">{formatDate(m.created_at)}</td>
                   <td className="px-5 py-4 text-right">
                     <button
                       onClick={() => navigate(`/admin/memoires/${m.id}`)}

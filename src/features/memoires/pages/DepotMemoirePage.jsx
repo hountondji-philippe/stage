@@ -3,20 +3,24 @@ import { ChevronRight, CheckCircle2 } from "lucide-react";
 import EtudiantLayout from "../components/EtudiantLayout";
 import AdminLayout from "../../admin/components/AdminLayout";
 import Stepper from "../components/depot/Stepper";
+import SelectionAuteur from "../components/depot/SelectionAuteur";
 import EtapeInformations from "../components/depot/EtapeInformations";
 import EtapeDocuments from "../components/depot/EtapeDocuments";
 import EtapeRecapitulatif from "../components/depot/EtapeRecapitulatif";
-import SelectionAuteur from "../components/depot/SelectionAuteur";
 import Button from "../../../components/ui/Button";
 import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useDepotForm } from "../hooks/useDepotForm";
 import { useFilieres } from "../hooks/useFilieres";
 import { ROUTES } from "../../../router/paths";
 
+const LABELS_ETUDIANT = ["Informations", "Documents", "Récapitulatif"];
+const LABELS_ADMIN = ["Sélection auteur", "Informations", "Documents", "Récapitulatif"];
+
 export default function DepotMemoirePage({ mode = "etudiant" }) {
   const navigate = useNavigate();
   const isAdmin = mode === "admin";
   const Layout = isAdmin ? AdminLayout : EtudiantLayout;
+  const labels = isAdmin ? LABELS_ADMIN : LABELS_ETUDIANT;
 
   const { filieres } = useFilieres();
   const {
@@ -26,7 +30,6 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
     updateData,
     etudiantAutoriseId,
     updateEtudiantAutoriseId,
-    authorError,
     files,
     fileErrors,
     handleFileChange,
@@ -107,44 +110,76 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
           </p>
         </header>
 
-        <Stepper currentStep={step} />
+        <Stepper currentStep={step} labels={labels} />
 
-        {step === 1 && (
+        {isAdmin ? (
           <>
-            {isAdmin && (
+            {step === 1 && (
               <SelectionAuteur
                 value={etudiantAutoriseId}
                 onChange={updateEtudiantAutoriseId}
-                error={authorError}
+                onNext={nextStep}
               />
             )}
-            <EtapeInformations data={data} onChange={updateData} onNext={nextStep} />
+            {step === 2 && (
+              <EtapeInformations
+                data={data}
+                onChange={updateData}
+                onNext={nextStep}
+                onPrev={prevStep}
+              />
+            )}
+            {step === 3 && (
+              <EtapeDocuments
+                files={files}
+                errors={fileErrors}
+                onFileChange={handleFileChange}
+                onPrev={prevStep}
+                onNext={nextStep}
+              />
+            )}
+            {step === 4 && (
+              <EtapeRecapitulatif
+                data={data}
+                files={files}
+                filiereNom={filiereNom}
+                certifie={certifie}
+                onCertifieChange={setCertifie}
+                onEditStep={goToStep}
+                onPrev={prevStep}
+                onSubmit={handleSubmit}
+                submitting={submitting}
+                submitError={submitError}
+              />
+            )}
           </>
-        )}
-
-        {step === 2 && (
-          <EtapeDocuments
-            files={files}
-            errors={fileErrors}
-            onFileChange={handleFileChange}
-            onPrev={prevStep}
-            onNext={nextStep}
-          />
-        )}
-
-        {step === 3 && (
-          <EtapeRecapitulatif
-            data={data}
-            files={files}
-            filiereNom={filiereNom}
-            certifie={certifie}
-            onCertifieChange={setCertifie}
-            onEditStep={goToStep}
-            onPrev={prevStep}
-            onSubmit={handleSubmit}
-            submitting={submitting}
-            submitError={submitError}
-          />
+        ) : (
+          <>
+            {step === 1 && <EtapeInformations data={data} onChange={updateData} onNext={nextStep} />}
+            {step === 2 && (
+              <EtapeDocuments
+                files={files}
+                errors={fileErrors}
+                onFileChange={handleFileChange}
+                onPrev={prevStep}
+                onNext={nextStep}
+              />
+            )}
+            {step === 3 && (
+              <EtapeRecapitulatif
+                data={data}
+                files={files}
+                filiereNom={filiereNom}
+                certifie={certifie}
+                onCertifieChange={setCertifie}
+                onEditStep={goToStep}
+                onPrev={prevStep}
+                onSubmit={handleSubmit}
+                submitting={submitting}
+                submitError={submitError}
+              />
+            )}
+          </>
         )}
       </div>
     </Layout>

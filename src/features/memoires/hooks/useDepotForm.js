@@ -8,26 +8,25 @@ const INITIAL_DATA = {
   titre: "",
   resume: "",
   filiere_id: "",
-  sous_filiere_id: "",
-  cycle: "",
   annee: ANNEE_COURANTE,
   encadrant: "",
 };
+
 /**
  * @param {"etudiant"|"admin"} mode - "etudiant" : dépôt par soi-même (peut
- * éditer un dépôt existant). "admin" : ajout manuel pour un étudiant tiers
- * (création uniquement, pas d'édition, champ auteur obligatoire).
+ * éditer un dépôt existant), 3 étapes. "admin" : ajout manuel pour un
+ * étudiant tiers, 4 étapes (Sélection auteur en plus, en 1er).
  */
 export function useDepotForm(mode = "etudiant") {
   const { id } = useParams();
   const navigate = useNavigate();
   const isAdmin = mode === "admin";
   const isEditMode = !isAdmin && Boolean(id);
+  const totalSteps = isAdmin ? 4 : 3;
 
   const [step, setStep] = useState(1);
   const [data, setData] = useState(INITIAL_DATA);
   const [etudiantAutoriseId, setEtudiantAutoriseId] = useState("");
-  const [authorError, setAuthorError] = useState("");
   const [files, setFiles] = useState({ memoire: null, preuve: null });
   const [fileErrors, setFileErrors] = useState({ memoire: null, preuve: null });
   const [certifie, setCertifie] = useState(false);
@@ -47,14 +46,12 @@ export function useDepotForm(mode = "etudiant") {
       .then((memoire) => {
         if (!mounted) return;
         setData({
-  titre: memoire.titre || "",
-  resume: memoire.resume || "",
-  filiere_id: memoire.filiere_id || "",
-  sous_filiere_id: memoire.sous_filiere_id || "",
-  cycle: memoire.cycle || "",
-  annee: memoire.annee || INITIAL_DATA.annee,
-  encadrant: memoire.encadrant || "",
-});
+          titre: memoire.titre || "",
+          resume: memoire.resume || "",
+          filiere_id: memoire.filiere_id || "",
+          annee: memoire.annee || INITIAL_DATA.annee,
+          encadrant: memoire.encadrant || "",
+        });
         setFiles({
           memoire: memoire.fichier_memoire
             ? { name: memoire.fichier_memoire.split("/").pop(), existing: true }
@@ -79,7 +76,6 @@ export function useDepotForm(mode = "etudiant") {
 
   function updateEtudiantAutoriseId(value) {
     setEtudiantAutoriseId(value);
-    setAuthorError("");
     setDirty(true);
   }
 
@@ -90,16 +86,7 @@ export function useDepotForm(mode = "etudiant") {
   }
 
   const goToStep = useCallback((target) => setStep(target), []);
-
-  function nextStep() {
-    // En mode admin, on bloque le passage à l'étape suivante tant que
-    // l'auteur n'est pas sélectionné (dès l'étape 1 "Informations").
-    if (isAdmin && step === 1 && !etudiantAutoriseId) {
-      setAuthorError("Sélectionnez l'étudiant auteur avant de continuer.");
-      return;
-    }
-    setStep((s) => Math.min(s + 1, 3));
-  }
+  const nextStep = useCallback(() => setStep((s) => Math.min(s + 1, totalSteps)), [totalSteps]);
   const prevStep = useCallback(() => setStep((s) => Math.max(s - 1, 1)), []);
 
   function handleBreadcrumbClick() {
@@ -115,21 +102,16 @@ export function useDepotForm(mode = "etudiant") {
     setSubmitting(true);
     try {
       const formData = new FormData();
-     formData.append("titre", data.titre);
-formData.append("resume", data.resume);
-formData.append("filiere_id", data.filiere_id);
-if (data.sous_filiere_id) {
-  formData.append("sous_filiere_id", data.sous_filiere_id);
-}
-formData.append("cycle", data.cycle);
-formData.append("annee", data.annee);
-formData.append("encadrant", data.encadrant);
+      formData.append("titre", data.titre);
+      formData.append("resume", data.resume);
+      formData.append("filiere_id", data.filiere_id);
+      formData.append("annee", data.annee);
+      formData.append("encadrant", data.encadrant);
+
       if (isAdmin) {
         formData.append("etudiant_autorise_id", etudiantAutoriseId);
       }
 
-      // On n'envoie le fichier que s'il a été (re)sélectionné —
-      // en mode modification, un fichier "existing" reste tel quel côté serveur.
       if (files.memoire && !files.memoire.existing) {
         formData.append("fichier_memoire", files.memoire);
       }
@@ -155,12 +137,12 @@ formData.append("encadrant", data.encadrant);
   return {
     isEditMode,
     isAdmin,
+    totalSteps,
     step,
     data,
     updateData,
     etudiantAutoriseId,
     updateEtudiantAutoriseId,
-    authorError,
     files,
     fileErrors,
     handleFileChange,
