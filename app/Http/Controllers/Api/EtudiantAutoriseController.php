@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\EtudiantAutorise;
+use App\Models\Filiere;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Imports\EtudiantsAutorisesImport;
@@ -68,13 +69,15 @@ class EtudiantAutoriseController extends Controller
             'etudiant' => $etudiant->load('filiere'),
         ], 201);
     }
-
+//logique pour afficher les détails d'un étudiant autorisé
     public function show(EtudiantAutorise $etudiantAutorise)
-    {
-        return response()->json([
-            'etudiant' => $etudiantAutorise->load('filiere', 'user'),
-        ]);
-    }
+{
+    $etudiantAutorise->load(['filiere', 'user.memoires.filiere', 'user.memoires.sousFiliere']);
+
+    return response()->json([
+        'etudiant' => $etudiantAutorise,
+    ]);
+}
 
             public function update(Request $request, EtudiantAutorise $etudiantAutorise)
             {

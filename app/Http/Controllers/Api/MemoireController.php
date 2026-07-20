@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Process;
-
+use App\Models\EtudiantAutorise;
+use App\Models\Filiere;
 class MemoireController extends Controller
 {
     public function rechercherPublic(Request $request)
@@ -475,6 +476,13 @@ public function update(Request $request, Memoire $memoire)
         return response()->json($memoires);
     }
 
+
+     public function showAdmin(Memoire $memoire)
+{
+    return response()->json([
+        'memoire' => $memoire->load(['filiere', 'sousFiliere', 'user.etudiantAutorise']),
+    ]);
+}
     public function supprimerAdmin(Memoire $memoire)
     {
         Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
@@ -492,4 +500,12 @@ public function update(Request $request, Memoire $memoire)
 
             return Storage::disk('local')->response($memoire->apercu);
         }
+        public function statsPubliques()
+{
+    return response()->json([
+        'memoires_deposes' => Memoire::where('statut', 'valide')->count(),
+        'filieres_couvertes' => Filiere::count(),
+        'etudiants_inscrits' => EtudiantAutorise::where('compte_active', true)->count(),
+    ]);
+}
 }

@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\EtudiantAutoriseController;
 use App\Http\Controllers\Api\FiliereController;
 use App\Http\Controllers\Api\SousFiliereController;
 use App\Http\Controllers\Api\ActualiteController;
-
+use App\Http\Controllers\Api\AdminRechercheController;
 
 Route::post('/auth/verifier-matricule', [AuthController::class, 'verifierMatricule']);
 Route::post('/auth/activer-compte', [AuthController::class, 'activerCompte']);
@@ -16,6 +16,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/mot-de-passe-oublie', [AuthController::class, 'demanderReinitialisation']);
 Route::post('/auth/reinitialiser-mot-de-passe', [AuthController::class, 'reinitialiserMotDePasse']);
 Route::post('/admin/etudiants-autorises/importer', [EtudiantAutoriseController::class, 'importer']);
+Route::get('/stats-publiques', [MemoireController::class, 'statsPubliques']);
 
 Route::get('/admin/stats', [MemoireController::class, 'stats']);
 Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
@@ -51,7 +52,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/memoires/{memoire}/valider', [MemoireController::class, 'valider']);
         Route::post('/admin/memoires/{memoire}/rejeter', [MemoireController::class, 'rejeter']);
         Route::delete('/admin/memoires/{memoire}', [MemoireController::class, 'supprimerAdmin']);
-
+        Route::get('/admin/recherche-globale', [AdminRechercheController::class, 'index']);
+        Route::get('/admin/memoires/{memoire}', [MemoireController::class, 'showAdmin']);
         Route::apiResource('/admin/etudiants-autorises', EtudiantAutoriseController::class)
             ->parameters(['etudiants-autorises' => 'etudiantAutorise']);
         
