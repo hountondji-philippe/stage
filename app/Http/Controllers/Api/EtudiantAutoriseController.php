@@ -13,36 +13,39 @@ use Maatwebsite\Excel\Facades\Excel;
 class EtudiantAutoriseController extends Controller
 {
     public function index(Request $request)
-    {
-        $query = EtudiantAutorise::with('filiere');
+{
+    $query = EtudiantAutorise::with('filiere');
 
-        if ($request->filled('filiere_id')) {
-            $query->where('filiere_id', $request->filiere_id);
-        }
-
-        if ($request->filled('annee_scolaire')) {
-    $query->where('annee_scolaire', $request->annee_scolaire);
+    if ($request->filled('filiere_id')) {
+        $query->where('filiere_id', $request->filiere_id);
     }
 
-         if ($request->filled('compte_active')) {
+    if ($request->filled('annee_scolaire')) {
+        $query->where('annee_scolaire', $request->annee_scolaire);
+    }
+
+    if ($request->filled('compte_active')) {
         $query->where('compte_active', $request->boolean('compte_active'));
     }
 
-        if ($request->filled('recherche')) {
-            $terme = $request->recherche;
-            $query->where(function ($q) use ($terme) {
-                $q->where('matricule', 'like', "%{$terme}%")
-                  ->orWhere('nom', 'like', "%{$terme}%")
-                  ->orWhere('prenom', 'like', "%{$terme}%")
-                  ->orWhere('email', 'like', "%{$terme}%");
-            });
-        }
-
-        $etudiants = $query->latest()->paginate(20);
-
-        return response()->json($etudiants);
+    if ($request->filled('recherche')) {
+        $terme = $request->recherche;
+        $query->where(function ($q) use ($terme) {
+            $q->where('matricule', 'like', "%{$terme}%")
+              ->orWhere('nom', 'like', "%{$terme}%")
+              ->orWhere('prenom', 'like', "%{$terme}%")
+              ->orWhere('email', 'like', "%{$terme}%");
+        });
     }
 
+    if ($request->filled('exclude_matricule')) {
+        $query->where('matricule', '!=', $request->exclude_matricule);
+    }
+
+    $etudiants = $query->latest()->paginate(20);
+
+    return response()->json($etudiants);
+}
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -142,4 +145,50 @@ class EtudiantAutoriseController extends Controller
             'message' => 'Étudiant retiré de la liste des autorisés.',
         ]);
     }
+
+    /**
+ * Recherche allégée d'étudiants pour la sélection d'un binôme.
+ * Accessible à tout utilisateur authentifié (pas réservé aux admins) :
+ * ne renvoie que les champs nécessaires à l'affichage d'un résultat de
+ * recherche (pas l'email, le statut détaillé du compte, etc.).
+ */
+public function rechercheBinome(Request $request)
+{
+    $query = EtudiantAutorise::with('filiere')
+        ->where('compte_active', true);
+
+    if ($request->filled('filiere_id')) {
+        $query->where('filiere_id', $request->filiere_id);
+    }
+
+    if ($request->filled('annee_scolaire')) {
+        $query->where('annee_scolaire', $request->annee_scolaire);
+    }
+
+    if ($request->filled('recherche')) {
+        $terme = $request->recherche;
+        $query->where(function ($q) use ($terme) {
+            $q->where('matricule', 'like', "%{$terme}%")
+              ->orWhere('nom', 'like', "%{$terme}%")
+              ->orWhere('prenom', 'like', "%{$terme}%");
+        });
+    }
+
+    if ($request->filled('exclude_matricule')) {
+        $query->where('matricule', '!=', $request->exclude_matricule);
+    }
+
+    $etudiants = $query->latest()
+        ->paginate(20)
+        ->through(fn ($e) => [
+            'id' => $e->id,
+            'matricule' => $e->matricule,
+            'nom' => $e->nom,
+            'prenom' => $e->prenom,
+            'niveau' => $e->niveau,
+            'filiere' => $e->filiere ? ['id' => $e->filiere->id, 'nom' => $e->filiere->nom] : null,
+        ]);
+
+    return response()->json($etudiants);
+}
 }

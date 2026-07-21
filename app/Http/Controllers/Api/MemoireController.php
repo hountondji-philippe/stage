@@ -257,7 +257,7 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
 }
 
 
-    public function storeAdmin(Request $request)
+   public function storeAdmin(Request $request)
 {
     $validator = Validator::make($request->all(), [
         'titre' => 'required|string|max:255',
@@ -268,6 +268,9 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
         'encadrant' => 'required|string|max:255',
         'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
         'cycle' => 'required|in:licence,master',
+        'etudiant_autorise_id' => 'required|exists:etudiant_autorises,id',
+        'mode_depot' => 'required|in:unique,binome',
+        'matricule_binome' => 'required_if:mode_depot,binome|nullable|string|exists:etudiant_autorises,matricule',
     ]);
 
     if ($validator->fails()) {
@@ -275,6 +278,36 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
             'message' => 'Données invalides.',
             'errors' => $validator->errors(),
         ], 422);
+    }
+
+    $etudiantAuteur = EtudiantAutorise::find($request->etudiant_autorise_id);
+
+    if (!$etudiantAuteur || !$etudiantAuteur->user_id) {
+        return response()->json([
+            'message' => "L'étudiant sélectionné n'a pas de compte utilisateur associé.",
+        ], 422);
+    }
+
+    $nomBinome = null;
+    $prenomBinome = null;
+
+    if ($request->mode_depot === 'binome') {
+        if ($request->matricule_binome === $etudiantAuteur->matricule) {
+            return response()->json([
+                'message' => "L'auteur principal et le binôme ne peuvent pas être la même personne.",
+            ], 422);
+        }
+
+        $etudiantBinome = EtudiantAutorise::where('matricule', $request->matricule_binome)->first();
+
+        if (!$etudiantBinome || !$etudiantBinome->compte_active) {
+            return response()->json([
+                'message' => 'Ce matricule ne correspond à aucun étudiant autorisé actif.',
+            ], 422);
+        }
+
+        $nomBinome = $etudiantBinome->nom;
+        $prenomBinome = $etudiantBinome->prenom;
     }
 
     $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
@@ -300,9 +333,8 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
         $cheminApercu = null;
     }
 
-
     $memoire = Memoire::create([
-        'user_id' => $request->user()->id,
+        'user_id' => $etudiantAuteur->user_id,
         'titre' => $request->titre,
         'resume' => $request->resume,
         'filiere_id' => $request->filiere_id,
@@ -310,20 +342,25 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
         'annee' => $request->annee,
         'encadrant' => $request->encadrant,
         'fichier_memoire' => $cheminMemoire,
-        'fichier_preuve' => $cheminPreuve,
         'statut' => 'valide',
         'apercu' => $cheminApercu,
         'cycle' => $request->cycle,
+        'mode_depot' => $request->mode_depot,
+        'matricule_binome' => $request->mode_depot === 'binome' ? $request->matricule_binome : null,
+        'nom_binome' => $nomBinome,
+        'prenom_binome' => $prenomBinome,
         'valide_par' => $request->user()->id,
         'valide_le' => now(),
     ]);
+
+    $cheminFiche = $this->genererFicheDepot($memoire, $etudiantAuteur);
+    $memoire->update(['fichier_preuve' => $cheminFiche]);
 
     return response()->json([
         'message' => 'Mémoire ajouté et publié avec succès.',
         'memoire' => $memoire,
     ], 201);
 }
-
 
 public function update(Request $request, Memoire $memoire)
 {

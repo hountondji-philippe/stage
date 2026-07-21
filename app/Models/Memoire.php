@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Memoire extends Model
 {
-    ===== app\Models\Memoire.php (extrait à modifier) =====
 protected $fillable = [
     'user_id',
     'titre',

@@ -34,6 +34,7 @@ Route::get('/actualites', [ActualiteController::class, 'index']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/etudiants-autorises/recherche-binome', [EtudiantAutoriseController::class, 'rechercheBinome']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/mot-de-passe', [AuthController::class, 'changerMotDePasse']);
