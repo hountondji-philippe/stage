@@ -14,19 +14,23 @@ const INITIAL_DATA = {
 
 /**
  * @param {"etudiant"|"admin"} mode - "etudiant" : dépôt par soi-même (peut
- * éditer un dépôt existant), 3 étapes. "admin" : ajout manuel pour un
- * étudiant tiers, 4 étapes (Sélection auteur en plus, en 1er).
+ * éditer un dépôt existant), 4 étapes (Sélection auteur en plus, en 1er).
+ * "admin" : ajout manuel pour un étudiant tiers, 4 étapes (Sélection auteur
+ * en plus, en 1er).
  */
 export function useDepotForm(mode = "etudiant") {
   const { id } = useParams();
   const navigate = useNavigate();
   const isAdmin = mode === "admin";
   const isEditMode = !isAdmin && Boolean(id);
-  const totalSteps = isAdmin ? 4 : 3;
+  const totalSteps = 4;
 
   const [step, setStep] = useState(1);
   const [data, setData] = useState(INITIAL_DATA);
   const [etudiantAutoriseId, setEtudiantAutoriseId] = useState("");
+  const [modeDepot, setModeDepot] = useState("seul");
+  const [matriculeBinome, setMatriculeBinome] = useState("");
+  const [etudiantBinome, setEtudiantBinome] = useState(null);
   const [files, setFiles] = useState({ memoire: null, preuve: null });
   const [fileErrors, setFileErrors] = useState({ memoire: null, preuve: null });
   const [certifie, setCertifie] = useState(false);
@@ -35,6 +39,7 @@ export function useDepotForm(mode = "etudiant") {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [createdMemoireId, setCreatedMemoireId] = useState(null);
   const [dirty, setDirty] = useState(false);
 
   // Mode modification (étudiant uniquement) : précharge les données existantes
@@ -60,6 +65,11 @@ export function useDepotForm(mode = "etudiant") {
             ? { name: memoire.fichier_preuve.split("/").pop(), existing: true }
             : null,
         });
+        setModeDepot(memoire.mode_depot === "binome" ? "binome" : "seul");
+        setMatriculeBinome(memoire.matricule_binome || "");
+        if (memoire.nom_binome || memoire.prenom_binome) {
+          setEtudiantBinome({ nom: memoire.nom_binome, prenom: memoire.prenom_binome, matricule: memoire.matricule_binome });
+        }
       })
       .catch(() => mounted && setSubmitError("Impossible de charger ce dépôt."))
       .finally(() => mounted && setLoadingInitial(false));
@@ -76,6 +86,17 @@ export function useDepotForm(mode = "etudiant") {
 
   function updateEtudiantAutoriseId(value) {
     setEtudiantAutoriseId(value);
+    setDirty(true);
+  }
+
+  function updateModeDepot(value) {
+    setModeDepot(value);
+    setDirty(true);
+  }
+
+  function updateMatriculeBinome(matricule, etudiant) {
+    setMatriculeBinome(matricule);
+    setEtudiantBinome(etudiant || null);
     setDirty(true);
   }
 
@@ -107,6 +128,12 @@ export function useDepotForm(mode = "etudiant") {
       formData.append("filiere_id", data.filiere_id);
       formData.append("annee", data.annee);
       formData.append("encadrant", data.encadrant);
+      formData.append("cycle", data.cycle);
+
+      formData.append("mode_depot", modeDepot === "seul" ? "unique" : "binome");
+      if (modeDepot === "binome") {
+        formData.append("matricule_binome", matriculeBinome);
+      }
 
       if (isAdmin) {
         formData.append("etudiant_autorise_id", etudiantAutoriseId);
@@ -123,8 +150,10 @@ export function useDepotForm(mode = "etudiant") {
         await creerMemoireAdmin(formData);
       } else if (isEditMode) {
         await modifierMemoire(id, formData);
+        setCreatedMemoireId(id);
       } else {
-        await creerMemoire(formData);
+        const result = await creerMemoire(formData);
+        setCreatedMemoireId(result?.memoire?.id ?? result?.id ?? null);
       }
       setSubmitted(true);
     } catch (err) {
@@ -143,6 +172,11 @@ export function useDepotForm(mode = "etudiant") {
     updateData,
     etudiantAutoriseId,
     updateEtudiantAutoriseId,
+    modeDepot,
+    updateModeDepot,
+    matriculeBinome,
+    etudiantBinome,
+    updateMatriculeBinome,
     files,
     fileErrors,
     handleFileChange,
@@ -157,5 +191,6 @@ export function useDepotForm(mode = "etudiant") {
     submitting,
     submitError,
     submitted,
+    createdMemoireId,
   };
 }

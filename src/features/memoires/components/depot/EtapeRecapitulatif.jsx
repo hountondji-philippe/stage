@@ -1,10 +1,12 @@
-import { FileText, Pencil, ClipboardCheck } from "lucide-react";
+import { FileText, Pencil, ClipboardCheck, User, Users } from "lucide-react";
 import Button from "../../../../components/ui/Button";
 
 export default function EtapeRecapitulatif({
   data,
   files,
   filiereNom,
+  modeDepot,
+  etudiantBinome,
   certifie,
   onCertifieChange,
   onEditStep,
@@ -30,11 +32,36 @@ export default function EtapeRecapitulatif({
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 pb-2">
               <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                Informations générales
+                Auteur(s)
               </h3>
               <button
                 type="button"
                 onClick={() => onEditStep(1)}
+                className="flex items-center gap-1 text-sm font-medium text-[var(--color-primary)] hover:underline"
+              >
+                <Pencil size={14} /> Modifier
+              </button>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg)] p-3">
+              {modeDepot === "binome" ? <Users size={18} className="shrink-0 text-[var(--color-primary)]" /> : <User size={18} className="shrink-0 text-[var(--color-primary)]" />}
+              <span className="text-sm font-medium text-[var(--color-text)]">
+                {modeDepot === "binome"
+                  ? etudiantBinome
+                    ? `Dépôt en binôme avec ${etudiantBinome.prenom} ${etudiantBinome.nom}`
+                    : "Dépôt en binôme"
+                  : "Dépôt seul"}
+              </span>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                Informations générales
+              </h3>
+              <button
+                type="button"
+                onClick={() => onEditStep(2)}
                 className="flex items-center gap-1 text-sm font-medium text-[var(--color-primary)] hover:underline"
               >
                 <Pencil size={14} /> Modifier
@@ -63,25 +90,19 @@ export default function EtapeRecapitulatif({
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 pb-2">
               <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                Pièces jointes
+                Pièce jointe
               </h3>
               <button
                 type="button"
-                onClick={() => onEditStep(2)}
+                onClick={() => onEditStep(3)}
                 className="flex items-center gap-1 text-sm font-medium text-[var(--color-primary)] hover:underline"
               >
                 <Pencil size={14} /> Modifier
               </button>
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg)] p-3">
-                <FileText size={18} className="shrink-0 text-red-600" />
-                <span className="truncate text-sm">{files.memoire?.name}</span>
-              </div>
-              <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg)] p-3">
-                <FileText size={18} className="shrink-0 text-red-600" />
-                <span className="truncate text-sm">{files.preuve?.name}</span>
-              </div>
+            <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg)] p-3">
+              <FileText size={18} className="shrink-0 text-red-600" />
+              <span className="truncate text-sm">{files.memoire?.name}</span>
             </div>
           </section>
 

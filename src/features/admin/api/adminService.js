@@ -26,12 +26,13 @@ export const createSousFiliere = (data) => apiClient.post('/admin/sous-filieres'
 // ⚠️ Le controller Laravel (EtudiantAutoriseController::index) lit
 // "recherche", "filiere_id" et "promo" — aucun filtre "niveau" côté
 // serveur, donc ce filtre-là doit être fait côté frontend.
-export const getEtudiants = ({ recherche, filiereId, promo } = {}) =>
+export const getEtudiants = ({ recherche, filiereId, promo, excludeMatricule } = {}) =>
   apiClient.get('/admin/etudiants-autorises', {
     params: {
       recherche: recherche || undefined,
       filiere_id: filiereId || undefined,
       promo: promo || undefined,
+      exclude_matricule: excludeMatricule || undefined,
     },
   });
 export const addEtudiantAutorise = (data) => apiClient.post('/admin/etudiants-autorises', data);

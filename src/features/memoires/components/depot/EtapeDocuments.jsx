@@ -3,7 +3,7 @@ import Button from "../../../../components/ui/Button";
 import FileDropzone from "./FileDropzone";
 
 export default function EtapeDocuments({ files, errors, onFileChange, onPrev, onNext }) {
-  const canGoNext = Boolean(files.memoire && files.preuve);
+  const canGoNext = Boolean(files.memoire);
 
   return (
     <div className="space-y-4">
@@ -13,8 +13,8 @@ export default function EtapeDocuments({ files, errors, onFileChange, onPrev, on
             <FileUp size={18} className="text-white" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">Documents à joindre</p>
-            <p className="text-xs text-white/70">Mémoire complet et preuve de soutenance</p>
+            <p className="text-sm font-bold text-white">Document à joindre</p>
+            <p className="text-xs text-white/70">Mémoire complet</p>
           </div>
         </div>
 
@@ -27,16 +27,6 @@ export default function EtapeDocuments({ files, errors, onFileChange, onPrev, on
             error={errors.memoire}
             onFileSelect={(file, error) => onFileChange("memoire", file, error)}
             onFileRemove={() => onFileChange("memoire", null, null)}
-          />
-          <FileDropzone
-            label="Preuve de soutenance (PDF ou image)"
-            hint="PDF ou image (JPG, PNG), 5 Mo maximum"
-            maxSizeMo={5}
-            typesAcceptes={["application/pdf", "image/jpeg", "image/png"]}
-            file={files.preuve}
-            error={errors.preuve}
-            onFileSelect={(file, error) => onFileChange("preuve", file, error)}
-            onFileRemove={() => onFileChange("preuve", null, null)}
           />
         </div>
       </div>

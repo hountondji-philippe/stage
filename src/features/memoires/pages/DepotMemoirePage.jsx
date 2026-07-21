@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, CheckCircle2 } from "lucide-react";
+import { ChevronRight, CheckCircle2, Download } from "lucide-react";
 import EtudiantLayout from "../components/EtudiantLayout";
 import AdminLayout from "../../admin/components/AdminLayout";
 import Stepper from "../components/depot/Stepper";
@@ -11,9 +11,11 @@ import Button from "../../../components/ui/Button";
 import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useDepotForm } from "../hooks/useDepotForm";
 import { useFilieres } from "../hooks/useFilieres";
+import { useAuth } from "../../auth/hooks/useAuth";
+import { telechargerFichierAuthentifie } from "../api/memoiresApi";
 import { ROUTES } from "../../../router/paths";
 
-const LABELS_ETUDIANT = ["Informations", "Documents", "Récapitulatif"];
+const LABELS_ETUDIANT = ["Sélection", "Informations", "Documents", "Récapitulatif"];
 const LABELS_ADMIN = ["Sélection auteur", "Informations", "Documents", "Récapitulatif"];
 
 export default function DepotMemoirePage({ mode = "etudiant" }) {
@@ -21,6 +23,9 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
   const isAdmin = mode === "admin";
   const Layout = isAdmin ? AdminLayout : EtudiantLayout;
   const labels = isAdmin ? LABELS_ADMIN : LABELS_ETUDIANT;
+
+  const { user } = useAuth();
+  const currentUserMatricule = user?.etudiantAutorise?.matricule;
 
   const { filieres } = useFilieres();
   const {
@@ -30,6 +35,11 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
     updateData,
     etudiantAutoriseId,
     updateEtudiantAutoriseId,
+    modeDepot,
+    updateModeDepot,
+    matriculeBinome,
+    etudiantBinome,
+    updateMatriculeBinome,
     files,
     fileErrors,
     handleFileChange,
@@ -44,6 +54,7 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
     submitting,
     submitError,
     submitted,
+    createdMemoireId,
   } = useDepotForm(mode);
 
   const filiereNom = filieres.find((f) => String(f.id) === String(data.filiere_id))?.nom || "";
@@ -67,6 +78,17 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
               ? "Le mémoire a été enregistré pour l'étudiant sélectionné."
               : "Votre mémoire est maintenant en attente de validation par l'administration."}
           </p>
+
+          {!isAdmin && createdMemoireId && (
+            <Button
+              variant="outline"
+              className="mb-3"
+              onClick={() => telechargerFichierAuthentifie(createdMemoireId, "preuve", "fiche-depot.pdf")}
+            >
+              <Download size={16} /> Télécharger la fiche de dépôt
+            </Button>
+          )}
+
           <Button
             variant="primary"
             onClick={() => navigate(isAdmin ? "/admin/tableau-de-bord" : ROUTES.espaceEtudiant)}
@@ -112,74 +134,51 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
 
         <Stepper currentStep={step} labels={labels} />
 
-        {isAdmin ? (
-          <>
-            {step === 1 && (
-              <SelectionAuteur
-                value={etudiantAutoriseId}
-                onChange={updateEtudiantAutoriseId}
-                onNext={nextStep}
-              />
-            )}
-            {step === 2 && (
-              <EtapeInformations
-                data={data}
-                onChange={updateData}
-                onNext={nextStep}
-                onPrev={prevStep}
-              />
-            )}
-            {step === 3 && (
-              <EtapeDocuments
-                files={files}
-                errors={fileErrors}
-                onFileChange={handleFileChange}
-                onPrev={prevStep}
-                onNext={nextStep}
-              />
-            )}
-            {step === 4 && (
-              <EtapeRecapitulatif
-                data={data}
-                files={files}
-                filiereNom={filiereNom}
-                certifie={certifie}
-                onCertifieChange={setCertifie}
-                onEditStep={goToStep}
-                onPrev={prevStep}
-                onSubmit={handleSubmit}
-                submitting={submitting}
-                submitError={submitError}
-              />
-            )}
-          </>
-        ) : (
-          <>
-            {step === 1 && <EtapeInformations data={data} onChange={updateData} onNext={nextStep} />}
-            {step === 2 && (
-              <EtapeDocuments
-                files={files}
-                errors={fileErrors}
-                onFileChange={handleFileChange}
-                onPrev={prevStep}
-                onNext={nextStep}
-              />
-            )}
-            {step === 3 && (
-              <EtapeRecapitulatif
-                data={data}
-                files={files}
-                filiereNom={filiereNom}
-                certifie={certifie}
-                onCertifieChange={setCertifie}
-                onEditStep={goToStep}
-                onPrev={prevStep}
-                onSubmit={handleSubmit}
-                submitting={submitting}
-                submitError={submitError}
-              />
-            )}
-          </>
+        {step === 1 && (
+          <SelectionAuteur
+            mode={mode}
+            modeDepot={modeDepot}
+            onModeDepotChange={updateModeDepot}
+            auteurId={etudiantAutoriseId}
+            onAuteurChange={updateEtudiantAutoriseId}
+            matriculeBinome={matriculeBinome}
+            onMatriculeBinomeChange={updateMatriculeBinome}
+            currentUserMatricule={currentUserMatricule}
+            onNext={nextStep}
+          />
+        )}
+        {step === 2 && (
+          <EtapeInformations
+            data={data}
+            onChange={updateData}
+            onNext={nextStep}
+            onPrev={prevStep}
+          />
+        )}
+        {step === 3 && (
+          <EtapeDocuments
+            files={files}
+            errors={fileErrors}
+            onFileChange={handleFileChange}
+            onPrev={prevStep}
+            onNext={nextStep}
+          />
+        )}
+        {step === 4 && (
+          <EtapeRecapitulatif
+            data={data}
+            files={files}
+            filiereNom={filiereNom}
+            modeDepot={modeDepot}
+            etudiantBinome={etudiantBinome}
+            certifie={certifie}
+            onCertifieChange={setCertifie}
+            onEditStep={goToStep}
+            onPrev={prevStep}
+            onSubmit={handleSubmit}
+            submitting={submitting}
+            submitError={submitError}
+          />
         )}
       </div>
     </Layout>

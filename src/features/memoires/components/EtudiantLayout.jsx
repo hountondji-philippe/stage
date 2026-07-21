@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, NavLink } from "react-router-dom";
 import {
   FolderOpen,
   FilePlus2,
@@ -15,6 +15,8 @@ import {
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
 import LogoutConfirmModal from "../../../components/ui/LogoutConfirmModal";
+import RechercheGlobaleDropdown from "./RechercheGlobaleDropdown";
+import { useRechercheGlobale } from "../hooks/useRechercheGlobale";
 
 const NAV_ITEMS = [
   { to: ROUTES.espaceEtudiant, label: "Tableau de bord", icon: FolderOpen },
@@ -45,9 +47,24 @@ function NavItem({ to, label, icon: Icon, onClick, className = "" }) {
 }
 
 export default function EtudiantLayout({ children }) {
+  const navigate = useNavigate();
   const [menuOuvert, setMenuOuvert] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, logout } = useAuth();
+
+  const { terme, setTerme, resultats, loading, ouvert, setOuvert } = useRechercheGlobale();
+  const rechercheRef = useRef(null);
+
+  useEffect(() => {
+    if (!ouvert) return;
+    function handleClickOutside(e) {
+      if (rechercheRef.current && !rechercheRef.current.contains(e.target)) {
+        setOuvert(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [ouvert, setOuvert]);
 
   const etudiantAutorise = user?.etudiant_autorise;
   const nomComplet = etudiantAutorise
@@ -95,13 +112,33 @@ export default function EtudiantLayout({ children }) {
       </aside>
 
       <header className="fixed left-0 right-0 top-0 z-40 flex h-20 items-center justify-between border-b border-gray-200 bg-white px-6 md:left-[280px]">
-        <div className="relative w-full max-w-sm">
+        <div className="relative w-full max-w-sm" ref={rechercheRef}>
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
+            value={terme}
+            onChange={(e) => {
+              setTerme(e.target.value);
+              setOuvert(true);
+            }}
+            onFocus={() => setOuvert(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && terme.trim().length >= 2) {
+                setOuvert(false);
+                navigate(`${ROUTES.archive}?q=${encodeURIComponent(terme)}`);
+              }
+            }}
             placeholder="Rechercher un mémoire..."
             className="w-full rounded-xl border border-gray-200 bg-[var(--color-bg)] py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]/40"
           />
+          {ouvert && (
+            <RechercheGlobaleDropdown
+              terme={terme}
+              resultats={resultats}
+              loading={loading}
+              onClose={() => setOuvert(false)}
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-4">

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, AlertCircle, MoreVertical, Trash2, Eye } from "lucide-react";
+import { GraduationCap, AlertCircle, MoreVertical, Trash2, Eye, Download } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import StatusBadge from "../../../components/ui/StatusBadge";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { telechargerFichierAuthentifie } from "../api/memoiresApi";
 import { ROUTES } from "../../../router/paths";
 
 const BORDER_COLOR = "border-l-[var(--color-primary)]";
@@ -19,7 +20,7 @@ function formatDate(dateStr) {
 
 export default function DepotCard({ depot, onDelete }) {
   const navigate = useNavigate();
-  const { id, titre, statut, filiere, created_at, motif_rejet } = depot;
+  const { id, titre, statut, filiere, created_at, motif_rejet, fichier_preuve } = depot;
   const [menuOuvert, setMenuOuvert] = useState(false);
   const [confirmationOuverte, setConfirmationOuverte] = useState(false);
   const menuRef = useRef(null);
@@ -54,6 +55,11 @@ export default function DepotCard({ depot, onDelete }) {
   function handleConsulterDepuisMenu() {
     setMenuOuvert(false);
     handleVoirDetail();
+  }
+
+  function handleTelechargerFiche() {
+    setMenuOuvert(false);
+    telechargerFichierAuthentifie(id, "preuve", `fiche-depot-${id}.pdf`);
   }
 
   return (
@@ -110,7 +116,7 @@ export default function DepotCard({ depot, onDelete }) {
             <MoreVertical size={18} />
           </button>
           {menuOuvert && (
-            <div className="absolute right-0 top-12 z-10 w-44 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg">
+            <div className="absolute right-0 top-12 z-10 w-52 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg">
               {enAttente && (
                 <button
                   onClick={handleConsulterDepuisMenu}
@@ -118,6 +124,15 @@ export default function DepotCard({ depot, onDelete }) {
                 >
                   <Eye size={16} />
                   Consulter
+                </button>
+              )}
+              {fichier_preuve && (
+                <button
+                  onClick={handleTelechargerFiche}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  <Download size={16} />
+                  Télécharger la fiche de dépôt
                 </button>
               )}
               <button
