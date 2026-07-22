@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/auth/mot-de-passe', [AuthController::class, 'changerMotDePasse']);
     Route::post('/auth/changer-mot-de-passe', [AuthController::class, 'changerMotDePasse']);
     Route::get('/memoires/mes-memoires', [MemoireController::class, 'mesMemoires']);
+    Route::get('/memoires/{memoire}', [MemoireController::class, 'show']);
     Route::get('/mes-memoires/{memoire}/fichier/{type}', [MemoireController::class, 'monFichier']);
     Route::get('/mes-memoires/{memoire}/telecharger/{type}', [MemoireController::class, 'monTelechargement']);
     Route::get('/memoires/{memoire}/mon-telechargement/{type}', [MemoireController::class, 'monTelechargement']);

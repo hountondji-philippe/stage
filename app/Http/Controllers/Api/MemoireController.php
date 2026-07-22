@@ -570,19 +570,25 @@ public function update(Request $request, Memoire $memoire)
     }
 
     public function tousAdmin(Request $request)
-    {
-        $query = Memoire::with(['filiere', 'sousFiliere', 'user.etudiantAutorise']);
+{
+    $query = Memoire::with(['filiere', 'sousFiliere', 'user.etudiantAutorise']);
 
-        if ($request->filled('statut')) {
-            $query->where('statut', $request->statut);
-        }
-
-        $memoires = $query->latest()->paginate(15);
-
-        return response()->json($memoires);
+    if ($request->filled('statut')) {
+        $query->where('statut', $request->statut);
     }
 
+    if ($request->filled('filiere_id')) {
+        $query->where('filiere_id', $request->filiere_id);
+    }
 
+    if ($request->filled('sous_filiere_id')) {
+        $query->where('sous_filiere_id', $request->sous_filiere_id);
+    }
+
+    $memoires = $query->latest()->paginate(15);
+
+    return response()->json($memoires);
+}
      public function showAdmin(Memoire $memoire)
 {
     return response()->json([
@@ -612,6 +618,16 @@ public function update(Request $request, Memoire $memoire)
         'memoires_deposes' => Memoire::where('statut', 'valide')->count(),
         'filieres_couvertes' => Filiere::count(),
         'etudiants_inscrits' => EtudiantAutorise::where('compte_active', true)->count(),
+    ]);
+}
+public function show(Request $request, Memoire $memoire)
+{
+    if ($memoire->user_id !== $request->user()->id) {
+        return response()->json(['message' => 'Accès non autorisé.'], 403);
+    }
+
+    return response()->json([
+        'memoire' => $memoire->load(['filiere', 'sousFiliere']),
     ]);
 }
 }
