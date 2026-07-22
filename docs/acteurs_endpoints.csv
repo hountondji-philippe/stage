@@ -1,0 +1,51 @@
+Acteur,Method,Endpoint,Controller@method,AuthRequired,AdminRequired,Description
+Visiteur,POST,/auth/verifier-matricule,AuthController@verifierMatricule,false,false,Vérifier matricule autorisé pour création de compte
+Visiteur,POST,/auth/activer-compte,AuthController@activerCompte,false,false,Activer compte via token d'activation
+Visiteur,POST,/auth/renvoyer-lien,AuthController@renvoyerLien,false,false,Renvoyer lien d'activation
+Visiteur,POST,/auth/login,AuthController@login,false,false,Connexion et obtention de token
+Visiteur,POST,/auth/mot-de-passe-oublie,AuthController@demanderReinitialisation,false,false,Demander réinitialisation mot de passe
+Visiteur,POST,/auth/reinitialiser-mot-de-passe,AuthController@reinitialiserMotDePasse,false,false,Réinitialiser mot de passe via token
+Visiteur,POST,/admin/etudiants-autorises/importer,EtudiantAutoriseController@importer,false,false,Import CSV/XLS des étudiants autorisés (route définie publique)
+Visiteur,GET,/stats-publiques,MemoireController@statsPubliques,false,false,Statistiques publiques
+Visiteur,GET,/recherche-globale,RechercheController@index,false,false,Recherche rapide
+Visiteur,GET,/recherche/memoires,MemoireController@rechercherPublic,false,false,Recherche filtrée des mémoires publics
+Visiteur,GET,/memoires/publics/{memoire},MemoireController@afficherPublic,false,false,Afficher détail mémoire public
+Visiteur,GET,/memoires/{memoire}/fichier,MemoireController@fichierPublic,false,false,Aperçu/stream du fichier public
+Visiteur,GET,/memoires/{memoire}/telecharger,MemoireController@telechargerPublic,false,false,Télécharger fichier mémoire public
+Visiteur,GET,/filieres,FiliereController@index,false,false,Lister filières publiques
+Visiteur,GET,/sous-filieres,SousFiliereController@index,false,false,Lister sous‑filières publiques
+Visiteur,GET,/memoires/{memoire}/apercu,MemoireController@apercuPublic,false,false,Récupérer l'aperçu image public
+Visiteur,GET,/memoires/plus-consultes,MemoireController@plusConsultesPublic,false,false,Top mémoires les plus consultés
+Visiteur,GET,/actualites,ActualiteController@index,false,false,Lister actualités publiques
+Utilisateur,POST,/auth/logout,AuthController@logout,true,false,Déconnexion (supprime token)
+Utilisateur,GET,/auth/me,AuthController@me,true,false,Récupérer profil utilisateur
+Utilisateur,PUT/POST,/auth/mot-de-passe,AuthController@changerMotDePasse,true,false,Changer mot de passe connecté
+Utilisateur,GET,/memoires/mes-memoires,MemoireController@mesMemoires,true,false,Lister ses mémoires déposés
+Utilisateur,GET,/mes-memoires/{memoire}/fichier/{type},MemoireController@monFichier,true,false,Récupérer fichier si propriétaire
+Utilisateur,GET,/mes-memoires/{memoire}/telecharger/{type},MemoireController@monTelechargement,true,false,Télécharger fichier si propriétaire
+Utilisateur,POST,/memoires,MemoireController@store,true,false,Déposer un nouveau mémoire
+Utilisateur,PUT,/memoires/{memoire},MemoireController@update,true,false,Mettre à jour son mémoire (si non validé)
+Utilisateur,DELETE,/memoires/{memoire},MemoireController@destroy,true,false,Supprimer son mémoire (si en attente)
+Admin,GET,/admin/memoires/en-attente,MemoireController@enAttenteAdmin,true,true,Lister mémoires en attente de validation
+Admin,GET,/admin/memoires,MemoireController@tousAdmin,true,true,Lister tous les mémoires
+Admin,POST,/admin/memoires,MemoireController@storeAdmin,true,true,Créer un mémoire (admin publié)
+Admin,GET,/admin/memoires/{memoire}/fichier/{type},MemoireController@fichierAdmin,true,true,Récupérer fichier d'un mémoire (admin)
+Admin,POST,/admin/memoires/{memoire}/valider,MemoireController@valider,true,true,Valider et publier un mémoire
+Admin,POST,/admin/memoires/{memoire}/rejeter,MemoireController@rejeter,true,true,Rejeter un mémoire avec motif
+Admin,DELETE,/admin/memoires/{memoire},MemoireController@supprimerAdmin,true,true,Supprimer définitivement un mémoire
+Admin,GET,/admin/recherche-globale,AdminRechercheController@index,true,true,Recherche interne admin
+Admin,GET,/admin/memoires/{memoire},MemoireController@showAdmin,true,true,Voir détail d'un mémoire (admin)
+Admin,GET,/admin/etudiants-autorises,EtudiantAutoriseController@index,true,true,Lister étudiants autorisés (admin)
+Admin,POST,/admin/etudiants-autorises,EtudiantAutoriseController@store,true,true,Ajouter un étudiant autorisé
+Admin,GET,/admin/etudiants-autorises/{id},EtudiantAutoriseController@show,true,true,Voir détail étudiant autorisé
+Admin,PUT/PATCH,/admin/etudiants-autorises/{id},EtudiantAutoriseController@update,true,true,Mettre à jour étudiant autorisé
+Admin,DELETE,/admin/etudiants-autorises/{id},EtudiantAutoriseController@destroy,true,true,Supprimer étudiant autorisé
+Admin,POST,/admin/actualites,ActualiteController@store,true,true,Créer une actualité (admin)
+Admin,PUT/PATCH,/admin/actualites/{id},ActualiteController@update,true,true,Mettre à jour actualité
+Admin,DELETE,/admin/actualites/{id},ActualiteController@destroy,true,true,Supprimer actualité
+Admin,POST,/admin/filieres,FiliereController@store,true,true,Créer filière
+Admin,PUT/PATCH,/admin/filieres/{id},FiliereController@update,true,true,Mettre à jour filière
+Admin,DELETE,/admin/filieres/{id},FiliereController@destroy,true,true,Supprimer filière
+Admin,POST,/admin/sous-filieres,SousFiliereController@store,true,true,Créer sous‑filière
+Admin,PUT/PATCH,/admin/sous-filieres/{id},SousFiliereController@update,true,true,Mettre à jour sous‑filière
+Admin,DELETE,/admin/sous-filieres/{id},SousFiliereController@destroy,true,true,Supprimer sous‑filière

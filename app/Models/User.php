@@ -52,4 +52,9 @@ class User extends Authenticatable
     {
         return $this->role === 'etudiant';
     }
+
+        public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
 }

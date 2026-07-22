@@ -1,0 +1,67 @@
+@startuml
+actor Utilisateur
+participant Frontend
+participant API
+participant AuthController
+participant MemoireController
+participant EtudiantAutoriseController
+participant MailService
+participant "Base de données" as DB
+
+== Activation de compte ==
+Utilisateur -> Frontend : saisir matricule
+Frontend -> API : POST /auth/verifier-matricule
+API -> AuthController : verifierMatricule()
+AuthController -> DB : select * from etudiants_autorises where matricule = ?
+alt matricule introuvable
+    AuthController -> API : 404 erreur
+    API -> Frontend : erreur
+else matricule trouvé
+    AuthController -> DB : update token_activation, token_expires_at
+    AuthController -> MailService : envoyer activation email
+    AuthController -> API : 200 OK
+    API -> Frontend : message d'activation envoyé
+end
+
+Frontend -> API : POST /auth/activer-compte
+API -> AuthController : activerCompte()
+AuthController -> DB : select * from etudiants_autorises where token_activation = ?
+alt token invalide
+    AuthController -> API : 404 erreur
+    API -> Frontend : erreur
+else token valide
+    AuthController -> DB : create user
+    AuthController -> DB : update etudiants_autorises (compte_active)
+    AuthController -> API : auth_token
+    API -> Frontend : token de connexion
+end
+
+== Déposer un mémoire ==
+Utilisateur -> Frontend : formulaire mémoire + fichier
+Frontend -> API : POST /memoires
+API -> MemoireController : store()
+MemoireController -> DB : select * from etudiants_autorises where matricule = ?
+alt binome invalide
+    MemoireController -> API : 422 erreur
+    API -> Frontend : erreur
+else binome valide ou mode unique
+    MemoireController -> DB : insert into memoires(...)
+    MemoireController -> Frontend : confirmation
+end
+
+== Validation admin ==
+Utilisateur -> Frontend : request memoire en attente
+Frontend -> API : GET /admin/memoires/en-attente
+API -> MemoireController : enAttenteAdmin()
+MemoireController -> DB : select * from memoires where statut = 'en_attente'
+MemoireController -> API : liste memoires
+API -> Frontend : afficher liste
+
+Utilisateur -> Frontend : clic valider
+Frontend -> API : POST /admin/memoires/{id}/valider
+API -> MemoireController : valider()
+MemoireController -> DB : update memoires set statut='valide', valide_par=?, valide_le=?
+MemoireController -> API : confirmation
+API -> Frontend : succès
+
+@enduml

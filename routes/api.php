@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\SousFiliereController;
 use App\Http\Controllers\Api\ActualiteController;
 use App\Http\Controllers\Api\AdminRechercheController;
 use App\Http\Controllers\Api\RechercheController;
+use App\Http\Controllers\Api\TicketController;
 
 Route::post('/auth/verifier-matricule', [AuthController::class, 'verifierMatricule']);
 Route::post('/auth/activer-compte', [AuthController::class, 'activerCompte']);
@@ -46,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/memoires', [MemoireController::class, 'store']);
     Route::put('/memoires/{memoire}', [MemoireController::class, 'update']);
     Route::delete('/memoires/{memoire}', [MemoireController::class, 'destroy']);
+    Route::get('/mes-tickets', [TicketController::class, 'mesTickets']);
+    Route::post('/tickets', [TicketController::class, 'store']);
 
     Route::middleware('admin')->group(function () {
         Route::get('/admin/memoires/en-attente', [MemoireController::class, 'enAttenteAdmin']);
@@ -57,6 +60,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/admin/memoires/{memoire}', [MemoireController::class, 'supprimerAdmin']);
         Route::get('/admin/recherche-globale', [AdminRechercheController::class, 'index']);
         Route::get('/admin/memoires/{memoire}', [MemoireController::class, 'showAdmin']);
+        Route::get('/admin/tickets', [TicketController::class, 'tousAdmin']);
+Route::get('/admin/tickets/stats', [TicketController::class, 'statsOuverts']);
+Route::post('/admin/tickets/{ticket}/repondre', [TicketController::class, 'repondre']);
         Route::apiResource('/admin/etudiants-autorises', EtudiantAutoriseController::class)
             ->parameters(['etudiants-autorises' => 'etudiantAutorise']);
         

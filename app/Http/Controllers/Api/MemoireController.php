@@ -248,12 +248,39 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
     $nomFichier = 'fiches/' . Str::random(40) . '.pdf';
     $cheminComplet = Storage::disk('local')->path($nomFichier);
 
+    $etudiant1?->load('filiere');
+
+    $etudiant2 = null;
+    if ($memoire->estBinome() && $memoire->matricule_binome) {
+        $etudiant2 = EtudiantAutorise::with('filiere')
+            ->where('matricule', $memoire->matricule_binome)
+            ->first();
+    }
+
+    $logoUac = $this->encoderLogo(public_path('images/logo-uac.png'));
+    $logoEneam = $this->encoderLogo(public_path('images/logo-memoires-plus.png'));
+
     Pdf::loadView('pdf.fiche-depot', [
         'memoire' => $memoire,
         'etudiant1' => $etudiant1,
+        'etudiant2' => $etudiant2,
+        'logoUac' => $logoUac,
+        'logoEneam' => $logoEneam,
     ])->save($cheminComplet);
 
     return $nomFichier;
+}
+
+private function encoderLogo(string $chemin): ?string
+{
+    if (!file_exists($chemin)) {
+        return null;
+    }
+
+    $type = pathinfo($chemin, PATHINFO_EXTENSION);
+    $data = file_get_contents($chemin);
+
+    return 'data:image/' . $type . ';base64,' . base64_encode($data);
 }
 
 
