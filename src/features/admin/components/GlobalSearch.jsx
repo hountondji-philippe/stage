@@ -38,7 +38,7 @@ export default function GlobalSearch() {
   }
 
   function allerVersFiliere(id) {
-  navigate("/admin/filieres", { state: { filiereIdAOuvrir: id } });
+  navigate(ROUTES.filiereDetailAdmin(id));
   setOuvert(false);
   reset();
 }

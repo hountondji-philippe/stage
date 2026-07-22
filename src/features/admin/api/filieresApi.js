@@ -40,3 +40,8 @@ export async function deleteSousFiliere(id) {
   const { data } = await apiClient.delete(`/admin/sous-filieres/${id}`);
   return data;
 }
+
+export async function getMemoiresAdmin(params = {}) {
+  const { data } = await apiClient.get("/admin/memoires", { params });
+  return data;
+}

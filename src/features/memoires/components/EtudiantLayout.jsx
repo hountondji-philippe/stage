@@ -11,6 +11,7 @@ import {
   ChevronDown,
   GraduationCap,
   ListChecks,
+  LifeBuoy,
 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { to: ROUTES.depotEtudiant, label: "Nouveau dépôt", icon: FilePlus2 },
   { to: ROUTES.archive, label: "Mémoires publics", icon: Globe2 },
   { to: ROUTES.profilEtudiant, label: "Mon profil", icon: UserRound },
+  { to: ROUTES.mesTickets, label: "Mes tickets", icon: LifeBuoy },
 ];
 
 function NavItem({ to, label, icon: Icon, onClick, className = "" }) {

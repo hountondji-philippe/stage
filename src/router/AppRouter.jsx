@@ -29,10 +29,12 @@ const ProfilAdminPage = lazy(() => import("../features/admin/pages/ProfilAdminPa
 const MemoireDetailPage = lazy(() => import("../features/recherche/pages/MemoireDetailPage"));
 const MemoiresListePage = lazy(() => import("../features/admin/pages/MemoiresListePage"));
 const ListeFilierePage = lazy(() => import("../features/admin/pages/ListeFilierePage"));
+const FiliereDetailAdminPage = lazy(() => import("../features/admin/pages/FiliereDetailAdminPage"));
 const MesDepotsPage = lazy(() => import("../features/memoires/pages/MesDepotsPage"));
 const AProposPage = lazy(() => import("../features/accueil/pages/AProposPage"));
 const ListeActualitesPage = lazy(() => import("../features/admin/pages/ListeActualitesPage"));
-
+const MesTicketsPage = lazy(() => import("../features/support/pages/MesTicketsPage"));
+const TicketsAdminPage = lazy(() => import("../features/support/pages/TicketsAdminPage"));
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -87,6 +89,15 @@ export default function AppRouter() {
               </RouteProtegee>
             }
           />
+
+          <Route
+  path={ROUTES.mesTickets}
+  element={
+    <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
+      <MesTicketsPage />
+    </RouteProtegee>
+  }
+/>
           <Route
             path={ROUTES.etudiantDetailAdmin(":id")}
             element={
@@ -155,11 +166,28 @@ export default function AppRouter() {
               </RouteProtegee>
             }
           />
+
+          <Route
+  path={ROUTES.ticketsAdmin}
+  element={
+    <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+      <TicketsAdminPage />
+    </RouteProtegee>
+  }
+/>
           <Route
             path="/admin/filieres"
             element={
               <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
                 <ListeFilierePage />
+              </RouteProtegee>
+            }
+          />
+          <Route
+            path={ROUTES.filiereDetailAdmin(":id")}
+            element={
+              <RouteProtegee rolesAutorises={["admin"]} redirectTo={ROUTES.connexionAdmin}>
+                <FiliereDetailAdminPage />
               </RouteProtegee>
             }
           />
