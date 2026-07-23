@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, CheckCircle2, Download } from "lucide-react";
+import { ChevronRight, CheckCircle2, Download, Lock } from "lucide-react";
 import EtudiantLayout from "../components/EtudiantLayout";
 import AdminLayout from "../../admin/components/AdminLayout";
 import Stepper from "../components/depot/Stepper";
@@ -11,6 +11,7 @@ import Button from "../../../components/ui/Button";
 import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useDepotForm } from "../hooks/useDepotForm";
 import { useFilieres } from "../hooks/useFilieres";
+import { usePeriodeDepot } from "../hooks/usePeriodeDepot";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { telechargerFichierAuthentifie } from "../api/memoiresApi";
 import { ROUTES } from "../../../router/paths";
@@ -25,9 +26,11 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
   const labels = isAdmin ? LABELS_ADMIN : LABELS_ETUDIANT;
 
   const { user } = useAuth();
-  const currentUserMatricule = user?.etudiantAutorise?.matricule;
+  const currentUserMatricule = user?.etudiant_autorise?.matricule;
 
   const { filieres } = useFilieres();
+  const { ouverte: periodeOuverte, loading: loadingPeriode } = usePeriodeDepot();
+
   const {
     isEditMode,
     step,
@@ -58,6 +61,26 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
   } = useDepotForm(mode);
 
   const filiereNom = filieres.find((f) => String(f.id) === String(data.filiere_id))?.nom || "";
+
+  if (!isAdmin && !loadingPeriode && periodeOuverte === false) {
+    return (
+      <Layout>
+        <div className="mx-auto flex max-w-[700px] flex-col items-center justify-center rounded-2xl bg-white px-6 py-20 text-center shadow-[0_4px_20px_rgba(19,36,107,0.08)]">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+            <Lock size={32} className="text-gray-400" />
+          </div>
+          <h2 className="mb-2 text-xl font-bold text-[var(--color-primary)]">Dépôt actuellement fermé</h2>
+          <p className="mb-6 max-w-sm text-sm text-gray-500">
+            La période de dépôt des mémoires n'est pas ouverte pour le moment. Consultez les actualités pour
+            connaître la prochaine ouverture.
+          </p>
+          <Button variant="primary" onClick={() => navigate(ROUTES.espaceEtudiant)}>
+            Retour à mes dépôts
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
 
   if (submitted) {
     return (

@@ -6,6 +6,7 @@ import StatCard from "../components/StatCard";
 import FiliereChart from "../components/FiliereChart";
 import RecentSubmissionsTable from "../components/RecentSubmissionsTable";
 import ActivityTimeline from "../components/ActivityTimeline";
+import PeriodeDepotControl from "../components/PeriodeDepotControl";
 import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useAdminStats } from "../hooks/useAdminStats";
 import { useActiviteRecente } from "../hooks/useActiviteRecente";
@@ -32,7 +33,6 @@ export default function DashboardAdminPage() {
     })();
   }, []);
 
-  // Un seul état de chargement global pour toute la page
   const isLoading = statsLoading || depotsLoading || activitesLoading;
 
   if (isLoading) {
@@ -54,6 +54,8 @@ export default function DashboardAdminPage() {
           </h2>
           <p className="text-gray-500">Vue d'ensemble de la plateforme de gestion des mémoires.</p>
         </div>
+
+        <PeriodeDepotControl />
 
         {/* 4 cartes stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

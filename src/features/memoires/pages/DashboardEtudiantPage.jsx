@@ -5,9 +5,11 @@ import EtudiantLayout from "../components/EtudiantLayout";
 import StatCard from "../components/StatCard";
 import DepotCard from "../components/DepotCard";
 import EmptyState from "../components/EmptyState";
+import BandeauPeriodeDepot from "../components/BandeauPeriodeDepot";
 import Button from "../../../components/ui/Button";
 import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useMesDepots } from "../hooks/useMesDepots";
+import { usePeriodeDepot } from "../hooks/usePeriodeDepot";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
 
@@ -15,8 +17,8 @@ export default function DashboardEtudiantPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { memoires, counts, loading, error, filtreStatut, toggleFiltre, refetch } = useMesDepots();
+  const { ouverte: periodeOuverte, loading: loadingPeriode } = usePeriodeDepot();
   const [deleteError, setDeleteError] = useState(null);
-
   const prenom = user?.etudiant_autorise?.prenom || "";
 
   async function handleDelete(id) {
@@ -37,11 +39,17 @@ export default function DashboardEtudiantPage() {
           </h1>
           <p className="mt-1 text-gray-500">Voici le statut de vos dépôts académiques.</p>
         </div>
-        <Button variant="accent" onClick={() => navigate(ROUTES.depotEtudiant)}>
+        <Button
+          variant="accent"
+          disabled={!loadingPeriode && !periodeOuverte}
+          onClick={() => navigate(ROUTES.depotEtudiant)}
+        >
           <Plus size={18} />
           Déposer un nouveau mémoire
         </Button>
       </div>
+
+      <BandeauPeriodeDepot />
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
@@ -85,16 +93,11 @@ export default function DashboardEtudiantPage() {
       )}
 
       <div className="relative">
-        {loading && (
-          <LoadingScreen fullScreen={false} message="Chargement de vos dépôts..." />
-        )}
-
+        {loading && <LoadingScreen fullScreen={false} message="Chargement de vos dépôts..." />}
         {!loading && error && (
           <div className="rounded-2xl bg-red-50 p-10 text-center text-red-600">{error}</div>
         )}
-
         {!loading && !error && memoires.length === 0 && <EmptyState />}
-
         {!loading && !error && memoires.length > 0 && (
           <div className="space-y-4">
             {memoires.map((depot) => (
