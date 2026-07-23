@@ -149,29 +149,6 @@ $memoires = $query->paginate(12);
 
 public function store(Request $request)
 {
-    if (!PeriodeDepot::estOuverte()) {
-        return response()->json([
-            'message' => 'La période de dépôt des mémoires est actuellement fermée.',
-        ], 403);
-    }
-
-    $etudiant1 = $request->user()->etudiantAutorise;
-    $niveauActuel = $etudiant1?->niveau;
-
-    if (!$niveauActuel) {
-        return response()->json([
-            'message' => 'Votre niveau n\'est pas renseigné. Contactez l\'administration.',
-        ], 422);
-    }
-
-    $depotExistant = $request->user()->memoires()->where('niveau', $niveauActuel)->exists();
-
-    if ($depotExistant) {
-        return response()->json([
-            'message' => "Vous avez déjà un dépôt pour votre niveau actuel ({$niveauActuel}). En cas de rejet, corrigez et renvoyez ce dépôt plutôt que d'en créer un nouveau.",
-        ], 409);
-    }
-
     $validator = Validator::make($request->all(), [
         'titre' => 'required|string|max:255',
         'resume' => 'required|string',
@@ -190,6 +167,29 @@ public function store(Request $request)
             'message' => 'Données invalides.',
             'errors' => $validator->errors(),
         ], 422);
+    }
+
+    if (!PeriodeDepot::estOuvertePour($request->cycle)) {
+        return response()->json([
+            'message' => 'La période de dépôt pour le cycle ' . $request->cycle . ' est actuellement fermée.',
+        ], 403);
+    }
+
+    $etudiant1 = $request->user()->etudiantAutorise;
+    $niveauActuel = $etudiant1?->niveau;
+
+    if (!$niveauActuel) {
+        return response()->json([
+            'message' => 'Votre niveau n\'est pas renseigné. Contactez l\'administration.',
+        ], 422);
+    }
+
+    $depotExistant = $request->user()->memoires()->where('niveau', $niveauActuel)->exists();
+
+    if ($depotExistant) {
+        return response()->json([
+            'message' => "Vous avez déjà un dépôt pour votre niveau actuel ({$niveauActuel}). En cas de rejet, corrigez et renvoyez ce dépôt plutôt que d'en créer un nouveau.",
+        ], 409);
     }
 
     $nomBinome = null;
@@ -277,7 +277,7 @@ public function update(Request $request, Memoire $memoire)
         ], 409);
     }
 
-    if ($memoire->estRejete() && !PeriodeDepot::estOuverte()) {
+    if ($memoire->estRejete() && !PeriodeDepot::estOuvertePour($memoire->cycle)) {
         return response()->json([
             'message' => 'La période de dépôt est fermée, vous ne pouvez pas renvoyer ce mémoire pour le moment.',
         ], 403);
