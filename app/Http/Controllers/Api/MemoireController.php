@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Process;
 use App\Models\EtudiantAutorise;
 use App\Models\Filiere;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\PeriodeDepot;
 
 class MemoireController extends Controller
 {
@@ -146,8 +147,31 @@ $memoires = $query->paginate(12);
     );
 }
 
-    public function store(Request $request)
+public function store(Request $request)
 {
+    if (!PeriodeDepot::estOuverte()) {
+        return response()->json([
+            'message' => 'La période de dépôt des mémoires est actuellement fermée.',
+        ], 403);
+    }
+
+    $etudiant1 = $request->user()->etudiantAutorise;
+    $niveauActuel = $etudiant1?->niveau;
+
+    if (!$niveauActuel) {
+        return response()->json([
+            'message' => 'Votre niveau n\'est pas renseigné. Contactez l\'administration.',
+        ], 422);
+    }
+
+    $depotExistant = $request->user()->memoires()->where('niveau', $niveauActuel)->exists();
+
+    if ($depotExistant) {
+        return response()->json([
+            'message' => "Vous avez déjà un dépôt pour votre niveau actuel ({$niveauActuel}). En cas de rejet, corrigez et renvoyez ce dépôt plutôt que d'en créer un nouveau.",
+        ], 409);
+    }
+
     $validator = Validator::make($request->all(), [
         'titre' => 'required|string|max:255',
         'resume' => 'required|string',
@@ -168,7 +192,6 @@ $memoires = $query->paginate(12);
         ], 422);
     }
 
-    $etudiant1 = $request->user()->etudiantAutorise;
     $nomBinome = null;
     $prenomBinome = null;
 
@@ -221,6 +244,7 @@ $memoires = $query->paginate(12);
         'filiere_id' => $request->filiere_id,
         'sous_filiere_id' => $request->sous_filiere_id,
         'annee' => $request->annee,
+        'niveau' => $niveauActuel,
         'encadrant' => $request->encadrant,
         'fichier_memoire' => $cheminMemoire,
         'statut' => 'en_attente',
@@ -232,7 +256,6 @@ $memoires = $query->paginate(12);
         'prenom_binome' => $prenomBinome,
     ]);
 
-    // Génère automatiquement la fiche de dépôt (remplace l'ancienne preuve téléversée)
     $cheminFiche = $this->genererFicheDepot($memoire, $etudiant1);
     $memoire->update(['fichier_preuve' => $cheminFiche]);
 
@@ -240,6 +263,82 @@ $memoires = $query->paginate(12);
         'message' => 'Mémoire déposé avec succès. Il sera examiné par l\'administration.',
         'memoire' => $memoire,
     ], 201);
+}
+
+public function update(Request $request, Memoire $memoire)
+{
+    if ($memoire->user_id !== $request->user()->id) {
+        return response()->json(['message' => 'Action non autorisée.'], 403);
+    }
+
+    if (!$memoire->estEnAttente() && !$memoire->estRejete()) {
+        return response()->json([
+            'message' => 'Seul un mémoire en attente ou rejeté peut être modifié.',
+        ], 409);
+    }
+
+    if ($memoire->estRejete() && !PeriodeDepot::estOuverte()) {
+        return response()->json([
+            'message' => 'La période de dépôt est fermée, vous ne pouvez pas renvoyer ce mémoire pour le moment.',
+        ], 403);
+    }
+
+    $validator = Validator::make($request->all(), [
+        'titre' => 'sometimes|string|max:255',
+        'resume' => 'sometimes|string',
+        'filiere_id' => 'sometimes|exists:filieres,id',
+        'sous_filiere_id' => 'sometimes|nullable|exists:sous_filieres,id',
+        'annee' => 'sometimes|string|max:4',
+        'cycle' => 'sometimes|in:licence,master',
+        'encadrant' => 'sometimes|string|max:255',
+        'fichier_memoire' => 'sometimes|file|mimes:pdf|max:10240',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Données invalides.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $donnees = $request->only(['titre', 'resume', 'filiere_id', 'sous_filiere_id', 'annee', 'cycle', 'encadrant']);
+    $regenererFiche = $request->hasFile('fichier_memoire')
+        || $request->filled('titre')
+        || $request->filled('encadrant')
+        || $request->filled('cycle')
+        || $request->filled('filiere_id');
+
+    if ($request->hasFile('fichier_memoire')) {
+        Storage::disk('local')->delete($memoire->fichier_memoire);
+        $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 'local');
+    }
+
+    $etaitRejete = $memoire->estRejete();
+
+    if ($etaitRejete) {
+        $donnees['statut'] = 'en_attente';
+        $donnees['motif_rejet'] = null;
+        $donnees['valide_par'] = null;
+        $donnees['valide_le'] = null;
+    }
+
+    $memoire->update($donnees);
+
+    if ($regenererFiche) {
+        $etudiant1 = $request->user()->etudiantAutorise;
+        if ($memoire->fichier_preuve) {
+            Storage::disk('local')->delete($memoire->fichier_preuve);
+        }
+        $cheminFiche = $this->genererFicheDepot($memoire, $etudiant1);
+        $memoire->update(['fichier_preuve' => $cheminFiche]);
+    }
+
+    return response()->json([
+        'message' => $etaitRejete
+            ? 'Mémoire corrigé et renvoyé pour validation.'
+            : 'Mémoire mis à jour avec succès.',
+        'memoire' => $memoire,
+    ]);
 }
 
 private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant1): string
@@ -389,68 +488,6 @@ private function encoderLogo(string $chemin): ?string
     ], 201);
 }
 
-public function update(Request $request, Memoire $memoire)
-{
-    if ($memoire->user_id !== $request->user()->id) {
-        return response()->json(['message' => 'Action non autorisée.'], 403);
-    }
-
-    if ($memoire->estValide()) {
-        return response()->json([
-            'message' => 'Un mémoire déjà validé ne peut plus être modifié.',
-        ], 409);
-    }
-
-    $validator = Validator::make($request->all(), [
-        'titre' => 'sometimes|string|max:255',
-        'resume' => 'sometimes|string',
-        'filiere_id' => 'sometimes|exists:filieres,id',
-        'sous_filiere_id' => 'sometimes|nullable|exists:sous_filieres,id',
-        'annee' => 'sometimes|string|max:4',
-        'cycle' => 'sometimes|in:licence,master',
-        'encadrant' => 'sometimes|string|max:255',
-        'fichier_memoire' => 'sometimes|file|mimes:pdf|max:10240',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'message' => 'Données invalides.',
-            'errors' => $validator->errors(),
-        ], 422);
-    }
-
-    $donnees = $request->only(['titre', 'resume', 'filiere_id', 'sous_filiere_id', 'annee', 'cycle', 'encadrant']);
-
-    if ($request->hasFile('fichier_memoire')) {
-        Storage::disk('local')->delete($memoire->fichier_memoire);
-        $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 'local');
-    }
-
-    // Si le mémoire était rejeté, la correction le renvoie en attente de validation
-    if ($memoire->statut === 'rejete') {
-        $donnees['statut'] = 'en_attente';
-        $donnees['motif_rejet'] = null;
-        $donnees['valide_par'] = null;
-        $donnees['valide_le'] = null;
-    }
-
-    $memoire->update($donnees);
-
-
-    if ($request->hasFile('fichier_memoire') || $memoire->wasChanged(['titre', 'encadrant', 'filiere_id', 'cycle'])) {
-    $etudiant1 = $request->user()->etudiantAutorise;
-    Storage::disk('local')->delete($memoire->fichier_preuve);
-    $cheminFiche = $this->genererFicheDepot($memoire, $etudiant1);
-    $memoire->update(['fichier_preuve' => $cheminFiche]);
-}
-
-    return response()->json([
-        'message' => $memoire->statut === 'en_attente' && $memoire->wasChanged('statut')
-            ? 'Mémoire corrigé et renvoyé pour validation.'
-            : 'Mémoire mis à jour avec succès.',
-        'memoire' => $memoire,
-    ]);
-}
 
     public function destroy(Request $request, Memoire $memoire)
     {

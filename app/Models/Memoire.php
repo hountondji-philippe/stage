@@ -14,6 +14,7 @@ protected $fillable = [
     'filiere_id',
     'sous_filiere_id',
     'annee',
+    'niveau',
     'cycle',
     'encadrant',
     'fichier_memoire',
@@ -80,5 +81,9 @@ public function estBinome(): bool
     public function scopeEnAttente($query)
     {
         return $query->where('statut', 'en_attente');
+    }
+        public function estRejete(): bool
+    {
+        return $this->statut === 'rejete';
     }
 }

@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\ActualiteController;
 use App\Http\Controllers\Api\AdminRechercheController;
 use App\Http\Controllers\Api\RechercheController;
 use App\Http\Controllers\Api\TicketController;
+use App\Http\Controllers\Api\PeriodeDepotController;
+
 
 Route::post('/auth/verifier-matricule', [AuthController::class, 'verifierMatricule']);
 Route::post('/auth/activer-compte', [AuthController::class, 'activerCompte']);
@@ -50,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/memoires/{memoire}', [MemoireController::class, 'destroy']);
     Route::get('/mes-tickets', [TicketController::class, 'mesTickets']);
     Route::post('/tickets', [TicketController::class, 'store']);
+    Route::get('/periode-depot', [PeriodeDepotController::class, 'statut']);
 
     Route::middleware('admin')->group(function () {
         Route::get('/admin/memoires/en-attente', [MemoireController::class, 'enAttenteAdmin']);
@@ -62,8 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/recherche-globale', [AdminRechercheController::class, 'index']);
         Route::get('/admin/memoires/{memoire}', [MemoireController::class, 'showAdmin']);
         Route::get('/admin/tickets', [TicketController::class, 'tousAdmin']);
-Route::get('/admin/tickets/stats', [TicketController::class, 'statsOuverts']);
-Route::post('/admin/tickets/{ticket}/repondre', [TicketController::class, 'repondre']);
+        Route::get('/admin/tickets/stats', [TicketController::class, 'statsOuverts']);
+        Route::post('/admin/tickets/{ticket}/repondre', [TicketController::class, 'repondre']);
+        Route::post('/admin/periode-depot/lancer', [PeriodeDepotController::class, 'lancer']);
+        Route::post('/admin/periode-depot/fermer', [PeriodeDepotController::class, 'fermer']);
         Route::apiResource('/admin/etudiants-autorises', EtudiantAutoriseController::class)
             ->parameters(['etudiants-autorises' => 'etudiantAutorise']);
         
