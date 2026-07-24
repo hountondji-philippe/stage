@@ -394,9 +394,9 @@ private function encoderLogo(string $chemin): ?string
         'encadrant' => 'required|string|max:255',
         'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
         'cycle' => 'required|in:licence,master',
-        'etudiant_autorise_id' => 'required|exists:etudiant_autorises,id',
+        'etudiant_autorise_id' => 'required|exists:etudiants_autorises,id',
         'mode_depot' => 'required|in:unique,binome',
-        'matricule_binome' => 'required_if:mode_depot,binome|nullable|string|exists:etudiant_autorises,matricule',
+        'matricule_binome' => 'required_if:mode_depot,binome|nullable|string|exists:etudiants_autorises,matricule',
     ]);
 
     if ($validator->fails()) {
@@ -487,7 +487,6 @@ private function encoderLogo(string $chemin): ?string
         'memoire' => $memoire,
     ], 201);
 }
-
 
     public function destroy(Request $request, Memoire $memoire)
     {
