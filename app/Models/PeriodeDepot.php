@@ -8,7 +8,7 @@ class PeriodeDepot extends Model
 {
     protected $table = 'periodes_depot';
 
-    protected $fillable = ['date_debut', 'date_fin', 'est_ouverte', 'ouverte_par'];
+    protected $fillable = ['date_debut', 'date_fin', 'cycle', 'est_ouverte', 'ouverte_par'];
 
     protected function casts(): array
     {
@@ -19,21 +19,21 @@ class PeriodeDepot extends Model
         ];
     }
 
-    public static function actuelle(): ?self
+    public static function toutes()
     {
-        return static::latest('id')->first();
+        return static::latest('id')->get();
     }
 
-    public static function estOuverte(): bool
+    public static function estOuvertePour(string $cycle): bool
     {
-        $periode = static::actuelle();
-
-        if (!$periode || !$periode->est_ouverte) {
-            return false;
-        }
-
         $aujourdhui = now()->startOfDay();
 
-        return $aujourdhui->gte($periode->date_debut) && $aujourdhui->lte($periode->date_fin);
+        return static::where('est_ouverte', true)
+            ->where(function ($q) use ($cycle) {
+                $q->where('cycle', $cycle)->orWhere('cycle', 'tous');
+            })
+            ->whereDate('date_debut', '<=', $aujourdhui)
+            ->whereDate('date_fin', '>=', $aujourdhui)
+            ->exists();
     }
 }

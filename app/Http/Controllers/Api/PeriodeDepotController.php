@@ -9,14 +9,17 @@ use Illuminate\Support\Facades\Validator;
 
 class PeriodeDepotController extends Controller
 {
-    public function statut()
+    public function statut(Request $request)
     {
-        $periode = PeriodeDepot::actuelle();
-
         return response()->json([
-            'ouverte' => PeriodeDepot::estOuverte(),
-            'periode' => $periode,
+            'licence_ouverte' => PeriodeDepot::estOuvertePour('licence'),
+            'master_ouverte' => PeriodeDepot::estOuvertePour('master'),
         ]);
+    }
+
+    public function index()
+    {
+        return response()->json(['periodes' => PeriodeDepot::toutes()]);
     }
 
     public function lancer(Request $request)
@@ -24,11 +27,12 @@ class PeriodeDepotController extends Controller
         $validator = Validator::make($request->all(), [
             'date_debut' => 'required|date',
             'date_fin' => 'required|date|after_or_equal:date_debut',
+            'cycle' => 'required|in:licence,master,tous',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Donnees invalides.',
+                'message' => 'Données invalides.',
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -36,29 +40,24 @@ class PeriodeDepotController extends Controller
         $periode = PeriodeDepot::create([
             'date_debut' => $request->date_debut,
             'date_fin' => $request->date_fin,
+            'cycle' => $request->cycle,
             'est_ouverte' => true,
             'ouverte_par' => $request->user()->id,
         ]);
 
         return response()->json([
-            'message' => 'Periode de depot lancee.',
+            'message' => 'Période de dépôt lancée.',
             'periode' => $periode,
         ], 201);
     }
 
-    public function fermer(Request $request)
+    public function fermer(PeriodeDepot $periodeDepot)
     {
-        $periode = PeriodeDepot::actuelle();
-
-        if (!$periode) {
-            return response()->json(['message' => 'Aucune periode active.'], 404);
-        }
-
-        $periode->update(['est_ouverte' => false]);
+        $periodeDepot->update(['est_ouverte' => false]);
 
         return response()->json([
-            'message' => 'Periode de depot fermee.',
-            'periode' => $periode,
+            'message' => 'Période de dépôt fermée.',
+            'periode' => $periodeDepot,
         ]);
     }
 }

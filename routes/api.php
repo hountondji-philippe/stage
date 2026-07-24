@@ -68,8 +68,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/tickets', [TicketController::class, 'tousAdmin']);
         Route::get('/admin/tickets/stats', [TicketController::class, 'statsOuverts']);
         Route::post('/admin/tickets/{ticket}/repondre', [TicketController::class, 'repondre']);
-        Route::post('/admin/periode-depot/lancer', [PeriodeDepotController::class, 'lancer']);
-        Route::post('/admin/periode-depot/fermer', [PeriodeDepotController::class, 'fermer']);
+        Route::get('/admin/periodes-depot', [PeriodeDepotController::class, 'index']);
+        Route::post('/admin/periodes-depot/lancer', [PeriodeDepotController::class, 'lancer']);
+        Route::post('/admin/periodes-depot/{periodeDepot}/fermer', [PeriodeDepotController::class, 'fermer']);
         Route::apiResource('/admin/etudiants-autorises', EtudiantAutoriseController::class)
             ->parameters(['etudiants-autorises' => 'etudiantAutorise']);
         
