@@ -27,4 +27,6 @@ export const ROUTES = {
   filiereDetailAdmin: (id) => `/admin/filieres/${id}`,
   mesTickets: "/etudiant/tickets",
   ticketsAdmin: "/admin/tickets",
+  actualites: "/actualites",
+  actualiteDetail: (id) => `/actualites/${id}`,
 };

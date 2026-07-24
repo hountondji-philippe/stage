@@ -7,7 +7,8 @@ import { useAuth } from "../../features/auth/hooks/useAuth";
 
 const NAV_LINKS = [
   { to: ROUTES.accueil, label: "Accueil" },
-  { to: ROUTES.archive, label: "Rechercher un mémoire" },
+  { to: ROUTES.archive, label: "Archives" },
+  { to: ROUTES.actualites, label: "Actualités" },
   { to: ROUTES.aPropos, label: "À propos" },
 ];
 

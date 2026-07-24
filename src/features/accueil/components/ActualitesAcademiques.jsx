@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Megaphone } from "lucide-react";
-import { ActualiteCard } from "./ActualiteCard";
+import { ActualiteCard } from "../../actualites/components/ActualiteCard";
 import { getActualites } from "../../admin/api/actualitesApi";
 
 // Réglages de l'effet "carte centrale agrandie"
@@ -21,22 +21,26 @@ export default function ActualitesAcademiques() {
   const rafRef = useRef(null);
 
   useEffect(() => {
-    let mounted = true;
-    getActualites()
-      .then((data) => {
-        if (mounted) setActualites(data);
-      })
-      .catch(() => {
-        if (mounted) setError("Impossible de charger les actualités.");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
+  let mounted = true;
+  getActualites()
+    .then((data) => {
+      if (mounted) {
+        const dixDernieres = [...data]
+          .sort((a, b) => new Date(b.date_publication) - new Date(a.date_publication))
+          .slice(0, 10);
+        setActualites(dixDernieres);
+      }
+    })
+    .catch(() => {
+      if (mounted) setError("Impossible de charger les actualités.");
+    })
+    .finally(() => {
+      if (mounted) setLoading(false);
+    });
+  return () => {
+    mounted = false;
+  };
+}, []);
   const bouclageActif = actualites.length >= 3;
   const actusAffichees = bouclageActif ? [...actualites, ...actualites] : actualites;
 

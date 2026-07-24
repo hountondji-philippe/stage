@@ -3,10 +3,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ROUTES } from "./paths";
 import RouteProtegee from "./RouteProtegee";
 import LoadingScreen from "../components/ui/LoadingScreen";
-
+import ActualitesPage from "../features/actualites/pages/ActualitesPage";
 // Layouts (import normal — léger, toujours nécessaire)
 import PublicLayout from "../components/layout/PublicLayout";
-
+import ActualiteDetailPage from "../features/actualites/pages/ActualiteDetailPage";
 // Pages (chargées à la demande)
 const ProfilEtudiantPage = lazy(() => import("../features/etudiant/pages/ProfilEtudiantPage"));
 const DepotMemoirePage = lazy(() => import("../features/memoires/pages/DepotMemoirePage"));
@@ -49,6 +49,8 @@ export default function AppRouter() {
             <Route path={ROUTES.motDePasseOublie} element={<MotDePasseOubliePage />} />
             <Route path="/reinitialiser-mot-de-passe/:token" element={<ReinitialiserMotDePassePage />} />
             <Route path={ROUTES.archive} element={<SearchPage />} />
+             <Route path={ROUTES.actualites} element={<ActualitesPage />} />
+             <Route path={ROUTES.actualiteDetail(":id")} element={<ActualiteDetailPage />} />
           </Route>
 
           {/* --- Espace SANS Header et Footer --- */}

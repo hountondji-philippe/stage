@@ -29,7 +29,10 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
   const currentUserMatricule = user?.etudiant_autorise?.matricule;
 
   const { filieres } = useFilieres();
-  const { ouverte: periodeOuverte, loading: loadingPeriode } = usePeriodeDepot();
+  // "cycle" ajouté : déduit automatiquement du niveau de l'étudiant
+  // connecté (voir usePeriodeDepot.js), utilisé pour verrouiller le
+  // champ Cycle dans EtapeInformations côté étudiant.
+  const { ouverte: periodeOuverte, cycle: cycleDeduit, loading: loadingPeriode } = usePeriodeDepot();
 
   const {
     isEditMode,
@@ -54,6 +57,8 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
     handleBreadcrumbClick,
     handleSubmit,
     loadingInitial,
+    loadingRestriction,
+    depotExistant,
     submitting,
     submitError,
     submitted,
@@ -62,7 +67,19 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
 
   const filiereNom = filieres.find((f) => String(f.id) === String(data.filiere_id))?.nom || "";
 
-  if (!isAdmin && !loadingPeriode && periodeOuverte === false) {
+  const chargementBloquant = loadingInitial || (!isAdmin && loadingPeriode) || loadingRestriction;
+
+  if (chargementBloquant) {
+    return (
+      <Layout>
+        <div className="relative min-h-[400px]">
+          <LoadingScreen fullScreen={false} message="Chargement du dépôt..." />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!isAdmin && !isEditMode && periodeOuverte === false) {
     return (
       <Layout>
         <div className="mx-auto flex max-w-[700px] flex-col items-center justify-center rounded-2xl bg-white px-6 py-20 text-center shadow-[0_4px_20px_rgba(19,36,107,0.08)]">
@@ -73,6 +90,28 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
           <p className="mb-6 max-w-sm text-sm text-gray-500">
             La période de dépôt des mémoires n'est pas ouverte pour le moment. Consultez les actualités pour
             connaître la prochaine ouverture.
+          </p>
+          <Button variant="primary" onClick={() => navigate(ROUTES.espaceEtudiant)}>
+            Retour à mes dépôts
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!isAdmin && !isEditMode && depotExistant) {
+    return (
+      <Layout>
+        <div className="mx-auto flex max-w-[700px] flex-col items-center justify-center rounded-2xl bg-white px-6 py-20 text-center shadow-[0_4px_20px_rgba(19,36,107,0.08)]">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+            <Lock size={32} className="text-gray-400" />
+          </div>
+          <h2 className="mb-2 text-xl font-bold text-[var(--color-primary)]">
+            Vous avez déjà un dépôt pour ce niveau
+          </h2>
+          <p className="mb-6 max-w-sm text-sm text-gray-500">
+            Un seul dépôt est autorisé par niveau académique. En cas de rejet, modifiez votre dépôt existant
+            plutôt que d'en créer un nouveau.
           </p>
           <Button variant="primary" onClick={() => navigate(ROUTES.espaceEtudiant)}>
             Retour à mes dépôts
@@ -121,10 +160,6 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
         </div>
       </Layout>
     );
-  }
-
-  if (loadingInitial) {
-    return <LoadingScreen message="Chargement du dépôt..." />;
   }
 
   return (
@@ -176,6 +211,7 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
             onChange={updateData}
             onNext={nextStep}
             onPrev={prevStep}
+            cycleImpose={!isAdmin ? cycleDeduit : null}
           />
         )}
         {step === 3 && (

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { creerMemoire, modifierMemoire, getMemoireById, creerMemoireAdmin } from "../api/memoiresApi";
+import { creerMemoire, modifierMemoire, getMemoireById, creerMemoireAdmin, getMesMemoires } from "../api/memoiresApi";
+import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
 const ANNEE_COURANTE = new Date().getFullYear().toString();
 
@@ -12,15 +13,10 @@ const INITIAL_DATA = {
   encadrant: "",
 };
 
-/**
- * @param {"etudiant"|"admin"} mode - "etudiant" : dépôt par soi-même (peut
- * éditer un dépôt existant), 4 étapes (Sélection auteur en plus, en 1er).
- * "admin" : ajout manuel pour un étudiant tiers, 4 étapes (Sélection auteur
- * en plus, en 1er).
- */
 export function useDepotForm(mode = "etudiant") {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isAdmin = mode === "admin";
   const isEditMode = !isAdmin && Boolean(id);
   const totalSteps = 4;
@@ -42,7 +38,34 @@ export function useDepotForm(mode = "etudiant") {
   const [createdMemoireId, setCreatedMemoireId] = useState(null);
   const [dirty, setDirty] = useState(false);
 
-  // Mode modification (étudiant uniquement) : précharge les données existantes
+  const [loadingRestriction, setLoadingRestriction] = useState(!isAdmin && !isEditMode);
+  const [depotExistant, setDepotExistant] = useState(false);
+
+  useEffect(() => {
+    if (isAdmin || isEditMode) {
+      setLoadingRestriction(false);
+      return;
+    }
+
+    let mounted = true;
+    const niveauActuel = user?.etudiant_autorise?.niveau;
+
+    getMesMemoires()
+      .then((mesMemoires) => {
+        if (!mounted) return;
+        const existe = niveauActuel
+          ? mesMemoires.some((m) => m.niveau === niveauActuel)
+          : false;
+        setDepotExistant(existe);
+      })
+      .catch(() => {})
+      .finally(() => mounted && setLoadingRestriction(false));
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAdmin, isEditMode, user]);
+
   useEffect(() => {
     if (!isEditMode) return;
     let mounted = true;
@@ -56,6 +79,8 @@ export function useDepotForm(mode = "etudiant") {
           filiere_id: memoire.filiere_id || "",
           annee: memoire.annee || INITIAL_DATA.annee,
           encadrant: memoire.encadrant || "",
+          cycle: memoire.cycle || "",
+          sous_filiere_id: memoire.sous_filiere_id || "",
         });
         setFiles({
           memoire: memoire.fichier_memoire
@@ -129,6 +154,9 @@ export function useDepotForm(mode = "etudiant") {
       formData.append("annee", data.annee);
       formData.append("encadrant", data.encadrant);
       formData.append("cycle", data.cycle);
+      if (data.sous_filiere_id) {
+        formData.append("sous_filiere_id", data.sous_filiere_id);
+      }
 
       formData.append("mode_depot", modeDepot === "seul" ? "unique" : "binome");
       if (modeDepot === "binome") {
@@ -188,6 +216,8 @@ export function useDepotForm(mode = "etudiant") {
     handleBreadcrumbClick,
     handleSubmit,
     loadingInitial,
+    loadingRestriction,
+    depotExistant,
     submitting,
     submitError,
     submitted,

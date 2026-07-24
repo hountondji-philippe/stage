@@ -1,4 +1,5 @@
-import { FileText } from "lucide-react";
+import { useEffect } from "react";
+import { FileText, Layers } from "lucide-react";
 import Button from "../../../../components/ui/Button";
 import { useFilieres } from "../../hooks/useFilieres";
 import { useSousFilieres } from "../../../admin/hooks/useSousFilieres";
@@ -9,10 +10,26 @@ const CYCLES = [
   { value: "licence", label: "Licence" },
   { value: "master", label: "Master" },
 ];
+const LABELS_CYCLE = { licence: "Licence", master: "Master" };
 
-export default function EtapeInformations({ data, onChange, onNext, onPrev }) {
+/**
+ * @param {string|null} [cycleImpose] - si fourni (mode étudiant), le cycle
+ * est déduit automatiquement du niveau et affiché en lecture seule —
+ * l'étudiant ne peut pas choisir un cycle différent du sien.
+ * En mode admin (cycleImpose absent/null), le select manuel reste actif.
+ */
+export default function EtapeInformations({ data, onChange, onNext, onPrev, cycleImpose = null }) {
   const { filieres, loading: loadingFilieres } = useFilieres();
   const { sousFilieres, loading: loadingSousFilieres } = useSousFilieres(data.filiere_id);
+
+  // Impose le cycle déduit dès qu'il est connu (mode étudiant) —
+  // synchronise data.cycle sans attendre une action de l'utilisateur.
+  useEffect(() => {
+    if (cycleImpose && data.cycle !== cycleImpose) {
+      onChange({ ...data, cycle: cycleImpose });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cycleImpose]);
 
   function handleField(e) {
     const { name, value } = e.target;
@@ -103,21 +120,29 @@ export default function EtapeInformations({ data, onChange, onNext, onPrev }) {
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-[var(--color-text)]">Cycle</label>
-              <select
-                name="cycle"
-                value={data.cycle || ""}
-                onChange={handleField}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-[var(--color-primary-light)] focus:ring-2 focus:ring-[var(--color-primary-light)]/40"
-              >
-                <option value="" disabled>
-                  Choisir un cycle
-                </option>
-                {CYCLES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
+              {cycleImpose ? (
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700">
+                  <Layers size={16} className="text-[var(--color-primary)]" />
+                  {LABELS_CYCLE[cycleImpose] || cycleImpose}
+                  <span className="ml-auto text-xs italic text-gray-400">Selon votre niveau</span>
+                </div>
+              ) : (
+                <select
+                  name="cycle"
+                  value={data.cycle || ""}
+                  onChange={handleField}
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-[var(--color-primary-light)] focus:ring-2 focus:ring-[var(--color-primary-light)]/40"
+                >
+                  <option value="" disabled>
+                    Choisir un cycle
                   </option>
-                ))}
-              </select>
+                  {CYCLES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="flex flex-col gap-2">

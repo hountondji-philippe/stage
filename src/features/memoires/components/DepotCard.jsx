@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, AlertCircle, MoreVertical, Trash2, Eye, Download } from "lucide-react";
+import { GraduationCap, AlertCircle, MoreVertical, Eye, Download } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import StatusBadge from "../../../components/ui/StatusBadge";
-import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { telechargerFichierAuthentifie } from "../api/memoiresApi";
 import { ROUTES } from "../../../router/paths";
 
@@ -18,19 +17,17 @@ function formatDate(dateStr) {
   });
 }
 
-export default function DepotCard({ depot, onDelete }) {
+export default function DepotCard({ depot }) {
   const navigate = useNavigate();
   const { id, titre, statut, filiere, created_at, motif_rejet, fichier_preuve } = depot;
   const [menuOuvert, setMenuOuvert] = useState(false);
-  const [confirmationOuverte, setConfirmationOuverte] = useState(false);
   const menuRef = useRef(null);
-  const enAttente = statut === "en_attente";
+  const modifiable = statut === "en_attente" || statut === "rejete";
 
   function handleVoirDetail() {
     navigate(ROUTES.memoireDetailEtudiant(id));
   }
 
-  // Ferme le menu "..." si on clique en dehors
   useEffect(() => {
     if (!menuOuvert) return;
     function handleClickOutside(e) {
@@ -41,16 +38,6 @@ export default function DepotCard({ depot, onDelete }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOuvert]);
-
-  function handleDemanderSuppression() {
-    setMenuOuvert(false);
-    setConfirmationOuverte(true);
-  }
-
-  function handleConfirmerSuppression() {
-    setConfirmationOuverte(false);
-    onDelete?.(id);
-  }
 
   function handleConsulterDepuisMenu() {
     setMenuOuvert(false);
@@ -97,7 +84,7 @@ export default function DepotCard({ depot, onDelete }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {enAttente ? (
+        {modifiable ? (
           <Button variant="outline" onClick={() => navigate(ROUTES.depotEtudiantModifier(id))}>
             Modifier
           </Button>
@@ -117,7 +104,7 @@ export default function DepotCard({ depot, onDelete }) {
           </button>
           {menuOuvert && (
             <div className="absolute right-0 top-12 z-10 w-52 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg">
-              {enAttente && (
+              {modifiable && (
                 <button
                   onClick={handleConsulterDepuisMenu}
                   className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -135,27 +122,10 @@ export default function DepotCard({ depot, onDelete }) {
                   Télécharger la fiche de dépôt
                 </button>
               )}
-              <button
-                onClick={handleDemanderSuppression}
-                className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
-              >
-                <Trash2 size={16} />
-                Supprimer le dépôt
-              </button>
             </div>
           )}
         </div>
       </div>
-
-      <ConfirmDialog
-        open={confirmationOuverte}
-        titre="Supprimer ce dépôt ?"
-        message={`Cette action est irréversible. "${titre}" sera définitivement supprimé.`}
-        labelConfirmer="Supprimer"
-        onConfirm={handleConfirmerSuppression}
-        onCancel={() => setConfirmationOuverte(false)}
-        danger
-      />
     </div>
   );
 }

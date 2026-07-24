@@ -25,3 +25,9 @@ export async function deleteActualite(id) {
   const { data } = await apiClient.delete(`/admin/actualites/${id}`);
   return data;
 }
+
+
+export async function getActualiteById(id) {
+  const { data } = await apiClient.get(`/actualites/${id}`);
+  return data.actualite;
+}

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Clock, CheckCircle2, XCircle, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import EtudiantLayout from "../components/EtudiantLayout";
@@ -16,19 +15,9 @@ import { ROUTES } from "../../../router/paths";
 export default function DashboardEtudiantPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { memoires, counts, loading, error, filtreStatut, toggleFiltre, refetch } = useMesDepots();
+  const { memoires, counts, loading, error, filtreStatut, toggleFiltre } = useMesDepots();
   const { ouverte: periodeOuverte, loading: loadingPeriode } = usePeriodeDepot();
-  const [deleteError, setDeleteError] = useState(null);
   const prenom = user?.etudiant_autorise?.prenom || "";
-
-  async function handleDelete(id) {
-    try {
-      // TODO: appeler l'endpoint de suppression une fois défini côté backend
-      await refetch();
-    } catch {
-      setDeleteError("La suppression a échoué. Réessayez.");
-    }
-  }
 
   return (
     <EtudiantLayout>
@@ -88,10 +77,6 @@ export default function DashboardEtudiantPage() {
         </button>
       </div>
 
-      {deleteError && (
-        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{deleteError}</p>
-      )}
-
       <div className="relative">
         {loading && <LoadingScreen fullScreen={false} message="Chargement de vos dépôts..." />}
         {!loading && error && (
@@ -101,7 +86,7 @@ export default function DashboardEtudiantPage() {
         {!loading && !error && memoires.length > 0 && (
           <div className="space-y-4">
             {memoires.map((depot) => (
-              <DepotCard key={depot.id} depot={depot} onDelete={handleDelete} />
+              <DepotCard key={depot.id} depot={depot} />
             ))}
           </div>
         )}
