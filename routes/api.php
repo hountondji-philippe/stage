@@ -34,6 +34,7 @@ Route::get('/memoires/{memoire}/apercu', [MemoireController::class, 'apercuPubli
 Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
 Route::get('/memoires/plus-consultes', [MemoireController::class, 'plusConsultesPublic']);
 Route::get('/actualites', [ActualiteController::class, 'index']);
+Route::get('/actualites/{actualite}', [ActualiteController::class, 'show']);
 
 
 Route::middleware('auth:sanctum')->group(function () {

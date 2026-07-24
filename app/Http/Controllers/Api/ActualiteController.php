@@ -15,6 +15,12 @@ class ActualiteController extends Controller
 
         return response()->json(['actualites' => $actualites]);
     }
+    public function show(Actualite $actualite)
+{
+    return response()->json([
+        'actualite' => $actualite,
+    ]);
+}
 
     public function store(Request $request)
     {
