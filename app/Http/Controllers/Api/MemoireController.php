@@ -104,15 +104,24 @@ $memoires = $query->paginate(12);
     }
 
     public function mesMemoires(Request $request)
-    {
-        $memoires = $request->user()->memoires()->with(['filiere', 'sousFiliere'])->latest()->get();
-
-        return response()->json(['memoires' => $memoires]);
-    }
-
-    public function monFichier(Request $request, Memoire $memoire, string $type)
 {
-    if ($memoire->user_id !== $request->user()->id) {
+    $matricule = $request->user()->etudiantAutorise?->matricule;
+
+    $memoires = Memoire::with(['filiere', 'sousFiliere'])
+        ->where(function ($q) use ($request, $matricule) {
+            $q->where('user_id', $request->user()->id);
+            if ($matricule) {
+                $q->orWhere('matricule_binome', $matricule);
+            }
+        })
+        ->latest()
+        ->get();
+
+    return response()->json(['memoires' => $memoires]);
+}
+   public function monFichier(Request $request, Memoire $memoire, string $type)
+{
+    if (!$this->peutAccederAuFichier($request, $memoire)) {
         return response()->json(['message' => 'Action non autorisée.'], 403);
     }
 
@@ -125,9 +134,9 @@ $memoires = $query->paginate(12);
     return Storage::disk('local')->response($chemin);
 }
 
-  public function monTelechargement(Request $request, Memoire $memoire, string $type)
+public function monTelechargement(Request $request, Memoire $memoire, string $type)
 {
-    if ($memoire->user_id !== $request->user()->id) {
+    if (!$this->peutAccederAuFichier($request, $memoire)) {
         abort(403);
     }
 
@@ -145,6 +154,19 @@ $memoires = $query->paginate(12);
         $chemin,
         Str::slug($memoire->titre) . '-' . $type . '.pdf'
     );
+}
+
+private function peutAccederAuFichier(Request $request, Memoire $memoire): bool
+{
+    if ($memoire->user_id === $request->user()->id) {
+        return true;
+    }
+
+    $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
+
+    return $memoire->binome_confirme
+        && $matriculeConnecte
+        && $matriculeConnecte === $memoire->matricule_binome;
 }
 
 public function store(Request $request)
@@ -764,4 +786,27 @@ public function afficherConfirmationBinome(Request $request, string $token)
             'message' => 'Vous avez refusé cette association. L\'étudiant en sera informé.',
         ]);
     }
+
+    public function fichierConfirmationBinome(Request $request, string $token, string $type)
+{
+    $memoire = Memoire::where('binome_token', $token)->firstOrFail();
+
+    $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
+
+    if (!$matriculeConnecte || $matriculeConnecte !== $memoire->matricule_binome) {
+        abort(403, 'Cette demande de confirmation ne vous concerne pas.');
+    }
+
+    if (!in_array($type, ['memoire', 'preuve'])) {
+        abort(404);
+    }
+
+    $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
+
+    if (!$chemin) {
+        abort(404);
+    }
+
+    return Storage::disk('local')->response($chemin);
+}
 }

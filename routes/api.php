@@ -59,6 +59,7 @@ Route::middleware(['auth:sanctum', 'lecture.seule'])->group(function () {
     Route::get('/binome/confirmation/{token}', [MemoireController::class, 'afficherConfirmationBinome']);
     Route::post('/binome/confirmation/{token}/confirmer', [MemoireController::class, 'confirmerBinome']);
     Route::post('/binome/confirmation/{token}/refuser', [MemoireController::class, 'refuserBinome']);
+    Route::get('/binome/confirmation/{token}/fichier/{type}', [MemoireController::class, 'fichierConfirmationBinome']);
 
     Route::middleware('admin')->group(function () {
         Route::get('/admin/stats', [MemoireController::class, 'stats']);
