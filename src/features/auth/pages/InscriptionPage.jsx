@@ -1,21 +1,37 @@
 import { GraduationCap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useInscription } from "../hooks/useInscription";
 import MatriculeStep from "../components/MatriculeStep";
 import BrandPanel from "../components/BrandPanel";
+import { ROUTES } from "../../../router/paths";
 
 export default function InscriptionPage() {
+  const navigate = useNavigate();
   const {
     matricule,
     setMatricule,
     loading,
     erreur,
-    emailEnvoye,
+    etape,
     verifierMatricule,
     renvoiLoading,
     renvoiMessage,
     chrono,
     renvoyerLien,
+    renvoyerCodeL2,
+    codeL2,
+    setCodeL2,
+    codeL2Loading,
+    codeL2Erreur,
+    verifierCode,
   } = useInscription();
+
+  async function handleVerifierCode() {
+  const succes = await verifierCode();
+  if (succes) {
+    navigate(ROUTES.archive);
+  }
+}
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 md:p-0 md:items-stretch">
@@ -37,7 +53,7 @@ export default function InscriptionPage() {
             <span className="font-bold text-[var(--color-primary)]">MÉMOIRES+</span>
           </div>
 
-          {!emailEnvoye && (
+          {etape === "saisie" && (
             <div>
               <h3 className="text-2xl font-semibold text-[var(--color-text)] mb-2">
                 Créer mon compte étudiant
@@ -54,11 +70,17 @@ export default function InscriptionPage() {
             onVerifier={verifierMatricule}
             loading={loading}
             erreur={erreur}
-            emailEnvoye={emailEnvoye}
+            etape={etape}
             chrono={chrono}
             renvoiLoading={renvoiLoading}
             renvoiMessage={renvoiMessage}
             onRenvoyer={renvoyerLien}
+            onRenvoyerCode={renvoyerCodeL2}
+            codeL2={codeL2}
+            onChangeCodeL2={setCodeL2}
+            codeL2Loading={codeL2Loading}
+            codeL2Erreur={codeL2Erreur}
+            onVerifierCode={handleVerifierCode}
           />
         </div>
       </div>

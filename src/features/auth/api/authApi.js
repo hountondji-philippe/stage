@@ -17,7 +17,12 @@ export async function getMe() {
 
 export async function verifierMatricule(matricule) {
   const { data } = await apiClient.post("/auth/verifier-matricule", { matricule });
-  return data; // { message } — succès = HTTP 200
+  return data; // { message, type? } — succès = HTTP 200 ; type: "code_l2" | "lien_activation"
+}
+
+export async function verifierCodeL2({ matricule, code }) {
+  const { data } = await apiClient.post("/auth/verifier-code-l2", { matricule, code });
+  return data; // { message, token } — succès = HTTP 200
 }
 
 export async function activerCompte({ token, password, password_confirmation }) {
@@ -71,6 +76,7 @@ export const authApi = {
   logout,
   getMe,
   verifierMatricule,
+  verifierCodeL2,
   activerCompte,
   renvoyerLien,
   changerMotDePasse,

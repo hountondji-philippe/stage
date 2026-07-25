@@ -71,3 +71,26 @@ export async function supprimerMemoire(id) {
   const { data } = await apiClient.delete(`/memoires/${id}`);
   return data;
 }
+
+// --- Confirmation binôme (token reçu par email) ---
+export async function getConfirmationBinome(token) {
+  const { data } = await apiClient.get(`/binome/confirmation/${token}`);
+  return data.memoire;
+}
+
+export async function getFichierConfirmationBlob(token, type) {
+  const { data } = await apiClient.get(`/binome/confirmation/${token}/fichier/${type}`, {
+    responseType: "blob",
+  });
+  return URL.createObjectURL(data);
+}
+
+export async function confirmerBinomeRequest(token) {
+  const { data } = await apiClient.post(`/binome/confirmation/${token}/confirmer`);
+  return data;
+}
+
+export async function refuserBinomeRequest(token) {
+  const { data } = await apiClient.post(`/binome/confirmation/${token}/refuser`);
+  return data;
+}

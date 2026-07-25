@@ -2,12 +2,13 @@ import { useState } from "react";
 import { importEtudiants } from "../api/etudiantsAutorisesApi";
 
 const ACCEPTED_EXTENSIONS = [".xlsx", ".csv"];
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 Mo
+const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
-export function useImportEtudiants({ onSuccess }) {
+export function useImportEtudiants({ onImported }) {
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resultat, setResultat] = useState(null);
 
   function selectFile(candidate) {
     setError("");
@@ -30,6 +31,7 @@ export function useImportEtudiants({ onSuccess }) {
   function reset() {
     setFile(null);
     setError("");
+    setResultat(null);
   }
 
   async function submit() {
@@ -37,9 +39,9 @@ export function useImportEtudiants({ onSuccess }) {
     setLoading(true);
     setError("");
     try {
-      await importEtudiants(file);
-      onSuccess?.();
-      reset();
+      const data = await importEtudiants(file);
+      setResultat(data);
+      onImported?.();
     } catch (err) {
       setError(
         err.response?.data?.message ??
@@ -50,5 +52,5 @@ export function useImportEtudiants({ onSuccess }) {
     }
   }
 
-  return { file, selectFile, reset, submit, error, loading };
+  return { file, selectFile, reset, submit, error, loading, resultat };
 }

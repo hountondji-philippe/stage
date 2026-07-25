@@ -1,4 +1,4 @@
-import { IdCard, Info, MailCheck, CheckCircle2, AlertCircle, RotateCw } from "lucide-react";
+import { IdCard, Info, MailCheck, CheckCircle2, AlertCircle, RotateCw, KeyRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/TextField";
@@ -9,13 +9,96 @@ export default function MatriculeStep({
   onVerifier,
   loading,
   erreur,
-  emailEnvoye,
+  etape,
   chrono,
   renvoiLoading,
   renvoiMessage,
   onRenvoyer,
+  onRenvoyerCode,
+  codeL2,
+  onChangeCodeL2,
+  codeL2Loading,
+  codeL2Erreur,
+  onVerifierCode,
 }) {
-  if (emailEnvoye) {
+  // --- Étape : accès en lecture seule L2 (saisie du code à 6 chiffres) ---
+  if (etape === "code_l2") {
+    const handleSubmitCode = (e) => {
+      e.preventDefault();
+      onVerifierCode();
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="text-center space-y-3">
+          <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-light)] flex items-center justify-center shadow-lg shadow-[var(--color-primary)]/20">
+            <KeyRound className="w-9 h-9 text-white" strokeWidth={1.75} />
+          </div>
+          <h3 className="text-2xl font-bold text-[var(--color-text)]">Saisissez votre code d'accès</h3>
+          <p className="text-gray-500 leading-relaxed max-w-sm mx-auto">
+            Un code à 6 chiffres a été envoyé à l'adresse enregistrée pour le matricule{" "}
+            <span className="font-semibold text-[var(--color-text)]">{matricule}</span>. Ce code expire
+            dans 15 minutes et donne un accès en lecture seule de 24 heures.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmitCode} className="space-y-4">
+          <Input
+            label="Code à 6 chiffres"
+            name="code_l2"
+            value={codeL2}
+            onChange={(e) => onChangeCodeL2(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="000000"
+            inputMode="numeric"
+            maxLength={6}
+            error={codeL2Erreur}
+            required
+          />
+
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={codeL2Loading}
+            disabled={codeL2.trim().length !== 6}
+          >
+            Valider le code
+          </Button>
+        </form>
+
+        {renvoiMessage && (
+          <p
+            className={`text-sm font-medium flex items-center justify-center gap-1.5 ${
+              renvoiMessage.type === "succes" ? "text-emerald-600" : "text-red-600"
+            }`}
+          >
+            {renvoiMessage.type === "succes" ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : (
+              <AlertCircle className="w-4 h-4" />
+            )}
+            {renvoiMessage.texte}
+          </p>
+        )}
+
+        <div className="space-y-2 text-center">
+          <Button variant="outline" fullWidth loading={renvoiLoading} disabled={chrono > 0} onClick={onRenvoyerCode}>
+            <RotateCw className="w-4 h-4" />
+            Renvoyer un code
+          </Button>
+          {chrono > 0 && (
+            <p className="text-xs text-gray-400">
+              Vous pourrez renvoyer un code dans{" "}
+              <span className="font-semibold text-[var(--color-primary)] tabular-nums">{chrono}s</span>
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // --- Étape : email d'activation envoyé (L3/M1/M2) ---
+  if (etape === "lien_envoye") {
     return (
       <div className="text-center space-y-6">
         <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-light)] flex items-center justify-center shadow-lg shadow-[var(--color-primary)]/20">
@@ -70,6 +153,7 @@ export default function MatriculeStep({
     );
   }
 
+  // --- Étape par défaut : saisie du matricule ---
   const handleSubmit = (e) => {
     e.preventDefault();
     onVerifier();

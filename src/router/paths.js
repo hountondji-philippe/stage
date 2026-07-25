@@ -17,6 +17,7 @@ export const ROUTES = {
   depotEtudiantModifier: (id) => `/etudiant/deposer/${id}`,
   memoireDetailEtudiant: (id) => `/etudiant/memoires/${id}`,
   profilEtudiant: "/etudiant/profil",
+  binomeConfirmation: (token) => `/binome/confirmation/${token}`,
 
   espaceAdmin: "/admin/tableau-de-bord",
   depotsEnAttenteAdmin: "/admin/depots-en-attente",

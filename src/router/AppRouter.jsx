@@ -22,7 +22,6 @@ const ConnexionEtudiantPage = lazy(() => import("../features/auth/pages/Connexio
 const ConnexionAdminPage = lazy(() => import("../features/auth/pages/ConnexionAdminPage"));
 const DashboardEtudiantPage = lazy(() => import("../features/memoires/pages/DashboardEtudiantPage"));
 const SearchPage = lazy(() => import("../features/recherche/pages/SearchPage"));
-const AccueilPage = lazy(() => import("../features/accueil/pages/AccueilPage"));
 const DepotsPage = lazy(() => import("../features/admin/pages/DepotsPage"));
 const DepotDetailPage = lazy(() => import("../features/admin/pages/DepotDetailPage"));
 const ProfilAdminPage = lazy(() => import("../features/admin/pages/ProfilAdminPage"));
@@ -35,6 +34,7 @@ const AProposPage = lazy(() => import("../features/accueil/pages/AProposPage"));
 const ListeActualitesPage = lazy(() => import("../features/admin/pages/ListeActualitesPage"));
 const MesTicketsPage = lazy(() => import("../features/support/pages/MesTicketsPage"));
 const TicketsAdminPage = lazy(() => import("../features/support/pages/TicketsAdminPage"));
+const ConfirmationBinomePage = lazy(() => import("../features/memoires/pages/ConfirmationBinomePage"));
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -42,7 +42,6 @@ export default function AppRouter() {
         <Routes>
           {/* --- Espace AVEC Header et Footer --- */}
           <Route element={<PublicLayout />}>
-            <Route path={ROUTES.accueil} element={<AccueilPage />} />
             <Route path="/memoires/:id" element={<MemoireDetailPage />} />
             <Route path={ROUTES.aPropos} element={<AProposPage />} />
             <Route path={ROUTES.activation(":token")} element={<ActivationPage />} />
@@ -54,6 +53,8 @@ export default function AppRouter() {
           </Route>
 
           {/* --- Espace SANS Header et Footer --- */}
+          {/* La racine du site affiche directement le formulaire d'inscription */}
+          <Route path={ROUTES.accueil} element={<InscriptionPage />} />
           <Route path={ROUTES.inscription} element={<InscriptionPage />} />
           <Route path="/activation/:token" element={<ActivationPage />} />
           <Route path={ROUTES.connexionEtudiant} element={<ConnexionEtudiantPage />} />
@@ -91,6 +92,14 @@ export default function AppRouter() {
               </RouteProtegee>
             }
           />
+          <Route
+  path="/binome/confirmation/:token"
+  element={
+    <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
+      <ConfirmationBinomePage />
+    </RouteProtegee>
+  }
+/>
 
           <Route
   path={ROUTES.mesTickets}

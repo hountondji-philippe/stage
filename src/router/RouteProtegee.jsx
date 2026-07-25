@@ -1,8 +1,9 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../features/auth/hooks/useAuth";
 
 export default function RouteProtegee({ children, rolesAutorises, redirectTo = "/connexion-etudiant" }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -13,11 +14,11 @@ export default function RouteProtegee({ children, rolesAutorises, redirectTo = "
   }
 
   if (!user) {
-    return <Navigate to={redirectTo} replace />;
+    return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
   if (rolesAutorises && !rolesAutorises.includes(user.role)) {
-    return <Navigate to={redirectTo} replace />;
+    return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
   return children;
