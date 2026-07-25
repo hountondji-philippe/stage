@@ -28,6 +28,9 @@ protected $fillable = [
     'matricule_binome',
     'nom_binome',
     'prenom_binome',
+    'binome_confirme',
+    'binome_token',
+    'binome_confirme_le',
 ];
 
 public function estBinome(): bool
@@ -40,6 +43,8 @@ public function estBinome(): bool
         return [
             'valide_le' => 'datetime',
             'views_count' => 'integer',
+            'binome_confirme' => 'boolean',
+            'binome_confirme_le' => 'datetime',
         ];
     }
 
@@ -85,5 +90,15 @@ public function estBinome(): bool
         public function estRejete(): bool
     {
         return $this->statut === 'rejete';
+    }
+
+    public function estEnAttenteBinome(): bool
+    {
+        return $this->statut === 'en_attente_binome';
+    }
+
+    public function scopeEnAttenteBinome($query)
+    {
+        return $query->where('statut', 'en_attente_binome');
     }
 }

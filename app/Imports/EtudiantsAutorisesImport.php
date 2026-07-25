@@ -43,12 +43,16 @@ class EtudiantsAutorisesImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            $existeDeja = EtudiantAutorise::where('matricule', $matricule)
+            $etudiantExistant = EtudiantAutorise::where('matricule', $matricule)
                 ->orWhere('email', $email)
-                ->exists();
+                ->first();
 
-            if ($existeDeja) {
-                $this->ignores[] = "Ligne {$ligne} : matricule ou email deja present ({$matricule}).";
+            if ($etudiantExistant) {
+                $etudiantExistant->update([
+                    'annee_validee' => true,
+                    'annee_validee_le' => now(),
+                ]);
+                $this->ignores[] = "Ligne {$ligne} : matricule ou email deja present ({$matricule}), annee validee mise a jour.";
                 continue;
             }
 
@@ -61,6 +65,8 @@ class EtudiantsAutorisesImport implements ToCollection, WithHeadingRow
                 'niveau' => $niveau,
                 'annee_scolaire' => $anneeScolaire,
                 'compte_active' => false,
+                'annee_validee' => true,
+                'annee_validee_le' => now(),
             ]);
 
             $this->crees[] = $matricule;

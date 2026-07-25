@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Mail\ReinitialisationMotDePasseMail;
 use Illuminate\Support\Facades\DB;
+use App\Mail\CodeAccesL2Mail;
+use App\Models\AccesL2;
 
 class AuthController extends Controller
 {
@@ -20,6 +22,7 @@ class AuthController extends Controller
      * Niveaux autorisés à créer un compte.
      */
     protected array $niveauxAutorises = ['L3', 'M1', 'M2'];
+    protected string $niveauLectureCode = 'L2';
 
     public function verifierMatricule(Request $request)
     {
@@ -42,6 +45,36 @@ class AuthController extends Controller
             ], 404);
         }
 
+        // Cas L1 : aucun accès, quel que soit le statut du compte
+        if ($etudiantAutorise->niveau === 'L1') {
+            return response()->json([
+                'message' => 'L\'accès à la plateforme n\'est pas encore ouvert aux étudiants de Licence 1.',
+            ], 403);
+        }
+
+        // Cas L2 : code temporaire par email, aucun compte créé
+        if ($etudiantAutorise->niveau === $this->niveauLectureCode) {
+            $code = (string) random_int(100000, 999999);
+
+            $accesL2 = AccesL2::updateOrCreate(
+                ['etudiant_autorise_id' => $etudiantAutorise->id],
+                [
+                    'code' => Hash::make($code),
+                    'code_expire_le' => now()->addMinutes(15),
+                ]
+            );
+
+            Mail::to($etudiantAutorise->email)->send(
+                new CodeAccesL2Mail($etudiantAutorise->prenom, $code)
+            );
+
+            return response()->json([
+                'message' => 'Un code d\'accès a été envoyé à l\'adresse enregistrée pour ce matricule.',
+                'type' => 'code_l2',
+            ]);
+        }
+
+        // Cas L3/M1/M2 : flux existant (lien d'activation)
         if ($etudiantAutorise->compte_active) {
             return response()->json([
                 'message' => 'Un compte existe déjà pour ce matricule. Connectez-vous ou réinitialisez votre mot de passe.',
@@ -62,6 +95,52 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Un email d\'activation a été envoyé à l\'adresse enregistrée pour ce matricule.',
+            'type' => 'lien_activation',
+        ]);
+    }
+
+    public function verifierCodeL2(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'matricule' => 'required|string',
+            'code' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Le matricule et le code sont obligatoires.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $etudiantAutorise = EtudiantAutorise::where('matricule', $request->matricule)->first();
+
+        if (!$etudiantAutorise || $etudiantAutorise->niveau !== $this->niveauLectureCode) {
+            return response()->json(['message' => 'Demande invalide.'], 404);
+        }
+
+        $accesL2 = AccesL2::where('etudiant_autorise_id', $etudiantAutorise->id)->first();
+
+        if (!$accesL2 || !$accesL2->code) {
+            return response()->json(['message' => 'Aucun code en attente pour ce matricule.'], 404);
+        }
+
+        if (now()->isAfter($accesL2->code_expire_le)) {
+            return response()->json(['message' => 'Ce code a expiré. Demandez-en un nouveau.'], 410);
+        }
+
+        if (!Hash::check($request->code, $accesL2->code)) {
+            return response()->json(['message' => 'Code incorrect.'], 422);
+        }
+
+        // Code à usage unique : on l'invalide immédiatement après vérification
+        $accesL2->update(['code' => null, 'code_expire_le' => null]);
+
+        $token = $accesL2->createToken('acces_l2', ['lecture-seule'], now()->addHours(24))->plainTextToken;
+
+        return response()->json([
+            'message' => 'Accès en lecture activé pour 24 heures.',
+            'token' => $token,
         ]);
     }
 

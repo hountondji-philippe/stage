@@ -183,6 +183,11 @@ public function store(Request $request)
             'message' => 'Votre niveau n\'est pas renseigné. Contactez l\'administration.',
         ], 422);
     }
+     if (!$etudiant1->annee_validee) {
+        return response()->json([
+            'message' => 'Votre année n\'est pas encore validée par la scolarité. Le dépôt vous sera ouvert dès que votre statut sera mis à jour.',
+        ], 403);
+    }
 
     $depotExistant = $request->user()->memoires()->where('niveau', $niveauActuel)->exists();
 
@@ -237,6 +242,8 @@ public function store(Request $request)
         $cheminApercu = null;
     }
 
+    $estBinome = $request->mode_depot === 'binome';
+
     $memoire = Memoire::create([
         'user_id' => $request->user()->id,
         'titre' => $request->titre,
@@ -247,17 +254,34 @@ public function store(Request $request)
         'niveau' => $niveauActuel,
         'encadrant' => $request->encadrant,
         'fichier_memoire' => $cheminMemoire,
-        'statut' => 'en_attente',
+        'statut' => $estBinome ? 'en_attente_binome' : 'en_attente',
         'apercu' => $cheminApercu,
         'cycle' => $request->cycle,
         'mode_depot' => $request->mode_depot,
-        'matricule_binome' => $request->mode_depot === 'binome' ? $request->matricule_binome : null,
+        'matricule_binome' => $estBinome ? $request->matricule_binome : null,
         'nom_binome' => $nomBinome,
         'prenom_binome' => $prenomBinome,
+        'binome_confirme' => !$estBinome,
+        'binome_token' => $estBinome ? Str::random(48) : null,
     ]);
 
     $cheminFiche = $this->genererFicheDepot($memoire, $etudiant1);
     $memoire->update(['fichier_preuve' => $cheminFiche]);
+
+    if ($estBinome) {
+        $emailBinome = EtudiantAutorise::where('matricule', $request->matricule_binome)->value('email');
+        if ($emailBinome) {
+            \Illuminate\Support\Facades\Mail::to($emailBinome)->send(new \App\Mail\ConfirmationBinomeMail($memoire));
+        }
+
+        return response()->json([
+            'message' => 'Dépôt enregistré. En attente de confirmation de votre binôme.',
+            'memoire' => $memoire,
+        ], 201);
+    }
+
+    \Illuminate\Support\Facades\Mail::to($request->user()->email)
+        ->send(new \App\Mail\FicheDepotMail($memoire, $etudiant1->prenom ?? ''));
 
     return response()->json([
         'message' => 'Mémoire déposé avec succès. Il sera examiné par l\'administration.',
@@ -666,4 +690,78 @@ public function show(Request $request, Memoire $memoire)
         'memoire' => $memoire->load(['filiere', 'sousFiliere']),
     ]);
 }
+public function afficherConfirmationBinome(Request $request, string $token)
+    {
+        $memoire = Memoire::where('binome_token', $token)->firstOrFail();
+
+        $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
+
+        if (!$matriculeConnecte || $matriculeConnecte !== $memoire->matricule_binome) {
+            return response()->json(['message' => 'Cette demande de confirmation ne vous concerne pas.'], 403);
+        }
+
+        if (!$memoire->estEnAttenteBinome()) {
+            return response()->json(['message' => 'Cette demande a déjà été traitée.'], 409);
+        }
+
+        return response()->json([
+            'memoire' => $memoire->load(['filiere', 'sousFiliere', 'user.etudiantAutorise']),
+        ]);
+    }
+
+    public function confirmerBinome(Request $request, string $token)
+    {
+        $memoire = Memoire::where('binome_token', $token)->firstOrFail();
+
+        $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
+
+        if (!$matriculeConnecte || $matriculeConnecte !== $memoire->matricule_binome) {
+            return response()->json(['message' => 'Cette demande de confirmation ne vous concerne pas.'], 403);
+        }
+
+        if (!$memoire->estEnAttenteBinome()) {
+            return response()->json(['message' => 'Cette demande a déjà été traitée.'], 409);
+        }
+
+        $memoire->update([
+            'statut' => 'en_attente',
+            'binome_confirme' => true,
+            'binome_confirme_le' => now(),
+        ]);
+
+        $etudiantAuteur = $memoire->user->etudiantAutorise;
+        \Illuminate\Support\Facades\Mail::to($memoire->user->email)
+            ->send(new \App\Mail\FicheDepotMail($memoire, $etudiantAuteur->prenom ?? ''));
+        \Illuminate\Support\Facades\Mail::to($request->user()->email)
+            ->send(new \App\Mail\FicheDepotMail($memoire, $request->user()->etudiantAutorise->prenom ?? ''));
+
+        return response()->json([
+            'message' => 'Dépôt confirmé. Il est désormais transmis à la scolarité.',
+            'memoire' => $memoire,
+        ]);
+    }
+
+    public function refuserBinome(Request $request, string $token)
+    {
+        $memoire = Memoire::where('binome_token', $token)->firstOrFail();
+
+        $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
+
+        if (!$matriculeConnecte || $matriculeConnecte !== $memoire->matricule_binome) {
+            return response()->json(['message' => 'Cette demande de confirmation ne vous concerne pas.'], 403);
+        }
+
+        if (!$memoire->estEnAttenteBinome()) {
+            return response()->json(['message' => 'Cette demande a déjà été traitée.'], 409);
+        }
+
+        $memoire->update([
+            'statut' => 'rejete',
+            'motif_rejet' => 'Le binôme désigné a refusé de confirmer ce dépôt.',
+        ]);
+
+        return response()->json([
+            'message' => 'Vous avez refusé cette association. L\'étudiant en sera informé.',
+        ]);
+    }
 }
