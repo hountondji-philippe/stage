@@ -28,6 +28,10 @@ class EtudiantAutoriseController extends Controller
         $query->where('compte_active', $request->boolean('compte_active'));
     }
 
+    if ($request->filled('annee_validee')) {
+        $query->where('annee_validee', $request->boolean('annee_validee'));
+    }
+
     if ($request->filled('recherche')) {
         $terme = $request->recherche;
         $query->where(function ($q) use ($terme) {
@@ -46,32 +50,32 @@ class EtudiantAutoriseController extends Controller
 
     return response()->json($etudiants);
 }
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'matricule' => 'required|string|unique:etudiants_autorises,matricule',
-            'email' => 'required|email|unique:etudiants_autorises,email',
-            'nom' => 'required|string|max:255',
-            'prenom' => 'required|string|max:255',
-            'filiere_id' => 'required|exists:filieres,id',
-            'annee_scolaire' => 'required|string|max:9',
-            'niveau' => 'required|in:L1,L2,L3,M1,M2',
-        ]);
+public function store(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'matricule' => 'required|string|unique:etudiants_autorises,matricule',
+        'email' => 'required|email|unique:etudiants_autorises,email',
+        'nom' => 'required|string|max:255',
+        'prenom' => 'required|string|max:255',
+        'filiere_id' => 'required|exists:filieres,id',
+        'annee_scolaire' => 'required|string|max:9',
+        'niveau' => 'required|in:L1,L2,L3,M1,M2',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Données invalides.',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $etudiant = EtudiantAutorise::create($validator->validated());
-
+    if ($validator->fails()) {
         return response()->json([
-            'message' => 'Étudiant ajouté à la liste des autorisés.',
-            'etudiant' => $etudiant->load('filiere'),
-        ], 201);
+            'message' => 'Données invalides.',
+            'errors' => $validator->errors(),
+        ], 422);
     }
+
+    $etudiant = EtudiantAutorise::create($validator->validated());
+
+    return response()->json([
+        'message' => 'Étudiant ajouté à la liste des autorisés.',
+        'etudiant' => $etudiant->load('filiere'),
+    ], 201);
+}
 //logique pour afficher les détails d'un étudiant autorisé
     public function show(EtudiantAutorise $etudiantAutorise)
 {
@@ -82,32 +86,33 @@ class EtudiantAutoriseController extends Controller
     ]);
 }
 
-            public function update(Request $request, EtudiantAutorise $etudiantAutorise)
-            {
-                $validator = Validator::make($request->all(), [
-                    'matricule' => 'sometimes|string|unique:etudiants_autorises,matricule,' . $etudiantAutorise->id,
-                    'email' => 'sometimes|email|unique:etudiants_autorises,email,' . $etudiantAutorise->id,
-                    'nom' => 'sometimes|string|max:255',
-                    'prenom' => 'sometimes|string|max:255',
-                    'filiere_id' => 'sometimes|exists:filieres,id',
-                    'annee_scolaire' => 'sometimes|string|max:9',
-                    'niveau' => 'sometimes|in:L1,L2,L3,M1,M2',
-                ]);
+           public function update(Request $request, EtudiantAutorise $etudiantAutorise)
+{
+    $validator = Validator::make($request->all(), [
+        'matricule' => 'sometimes|string|unique:etudiants_autorises,matricule,' . $etudiantAutorise->id,
+        'email' => 'sometimes|email|unique:etudiants_autorises,email,' . $etudiantAutorise->id,
+        'nom' => 'sometimes|string|max:255',
+        'prenom' => 'sometimes|string|max:255',
+        'filiere_id' => 'sometimes|exists:filieres,id',
+        'annee_scolaire' => 'sometimes|string|max:9',
+        'niveau' => 'sometimes|in:L1,L2,L3,M1,M2',
+        'annee_validee' => 'sometimes|boolean',
+    ]);
 
-                if ($validator->fails()) {
-                    return response()->json([
-                        'message' => 'Données invalides.',
-                        'errors' => $validator->errors(),
-                    ], 422);
-                }
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Données invalides.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
 
-                $etudiantAutorise->update($validator->validated());
+    $etudiantAutorise->update($validator->validated());
 
-                return response()->json([
-                    'message' => 'Étudiant mis à jour.',
-                    'etudiant' => $etudiantAutorise->load('filiere'),
-                ]);
-            }
+    return response()->json([
+        'message' => 'Étudiant mis à jour.',
+        'etudiant' => $etudiantAutorise->load('filiere'),
+    ]);
+}
             public function importer(Request $request)
         {
             $validator = Validator::make($request->all(), [

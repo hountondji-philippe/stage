@@ -21,6 +21,8 @@ class EtudiantAutorise extends Model
         'compte_active',
         'token_activation',
         'token_expires_at',
+        'annee_validee',
+        'annee_validee_le',
     ];
 
     protected $hidden = [
@@ -31,7 +33,9 @@ class EtudiantAutorise extends Model
     {
         return [
             'compte_active' => 'boolean',
+            'annee_validee' => 'boolean',
             'token_expires_at' => 'datetime',
+            'annee_validee_le' => 'datetime',
         ];
     }
 
