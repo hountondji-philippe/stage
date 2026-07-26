@@ -704,7 +704,7 @@ private function encoderLogo(string $chemin): ?string
 }
 public function show(Request $request, Memoire $memoire)
 {
-    if ($memoire->user_id !== $request->user()->id) {
+    if (!$this->peutAccederAuFichier($request, $memoire)) {
         return response()->json(['message' => 'Accès non autorisé.'], 403);
     }
 
