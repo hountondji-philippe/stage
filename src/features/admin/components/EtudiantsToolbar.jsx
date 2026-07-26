@@ -1,4 +1,4 @@
-import { Search, Upload, Plus } from "lucide-react";
+import { Search, Upload, CheckCircle2 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { useFilieres } from "../hooks/useFilieres";
 
@@ -49,8 +49,8 @@ export default function EtudiantsToolbar({
           Importer
         </Button>
         <Button variant="accent" fullWidth onClick={onAddClick} className="lg:w-auto">
-          <Plus size={18} />
-          Ajouter un étudiant
+          <CheckCircle2 size={18} />
+          Valider l'année
         </Button>
       </div>
     </div>

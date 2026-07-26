@@ -30,8 +30,9 @@ export default function PublicFooter() {
         {/* Colonne 2 */}
         <div className="flex flex-col gap-4">
           <h4 className="font-bold text-white mb-2">Liens Rapides</h4>
-          <Link to={ROUTES.accueil} className="text-[#b9c3ff] opacity-80 hover:text-[#fabd0d] transition-colors">Accueil</Link>
           <Link to={ROUTES.archive} className="text-[#b9c3ff] opacity-80 hover:text-[#fabd0d] transition-colors">Rechercher un mémoire</Link>
+          <Link to={ROUTES.actualites} className="text-[#b9c3ff] opacity-80 hover:text-[#fabd0d] transition-colors">Actualités</Link>
+          <Link to={ROUTES.aPropos} className="text-[#b9c3ff] opacity-80 hover:text-[#fabd0d] transition-colors">À propos</Link>
           <Link
             to={isAuthenticated ? ROUTES.espaceEtudiant : ROUTES.connexionEtudiant}
             className="text-[#b9c3ff] opacity-80 hover:text-[#fabd0d] transition-colors"

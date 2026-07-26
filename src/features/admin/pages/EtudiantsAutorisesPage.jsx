@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import EtudiantsToolbar from "../components/EtudiantsToolbar";
 import StatutTabsEtudiants from "../components/StatutTabsEtudiants";
 import BulkActionsBar from "../components/BulkActionsBar";
 import EtudiantsListe from "../components/EtudiantsListe";
-import EtudiantFormModal from "../components/EtudiantFormModal";
+import ValiderAnneeModal from "../components/ValiderAnneeModal";
 import ImportModal from "../components/ImportModal";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import LoadingScreen from "../../../components/ui/LoadingScreen";
@@ -32,19 +31,11 @@ export default function EtudiantsAutorisesPage() {
     refetch,
   } = useEtudiantsAutorises();
 
-  const [formModal, setFormModal] = useState({ open: false, etudiant: null });
+  const [validerAnneeModalOpen, setValiderAnneeModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null); // étudiant | "bulk" | null
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-
-  function openAddModal() {
-    setFormModal({ open: true, etudiant: null });
-  }
-
-  function openEditModal(etudiant) {
-    setFormModal({ open: true, etudiant });
-  }
 
   function openDeleteModal(target) {
     setDeleteError("");
@@ -100,7 +91,7 @@ export default function EtudiantsAutorisesPage() {
           filiere={filiere}
           onFiliereChange={setFiliere}
           onImportClick={() => setImportModalOpen(true)}
-          onAddClick={openAddModal}
+          onAddClick={() => setValiderAnneeModalOpen(true)}
         />
 
         <StatutTabsEtudiants statut={statutFiltre} onStatutChange={setStatutFiltre} />
@@ -125,26 +116,16 @@ export default function EtudiantsAutorisesPage() {
             allSelected={allSelected}
             onToggleSelected={toggleSelected}
             onToggleSelectAll={toggleSelectAll}
-            onEdit={openEditModal}
+            onEdit={() => {}}
             onDeleteOne={openDeleteModal}
           />
         )}
       </div>
 
-      {/* FAB mobile */}
-      <button
-        onClick={openAddModal}
-        className="fixed bottom-20 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-accent)] text-[var(--color-text)] shadow-xl transition-transform active:scale-90 md:hidden"
-        aria-label="Ajouter un étudiant"
-      >
-        <Plus size={28} />
-      </button>
-
-      <EtudiantFormModal
-        open={formModal.open}
-        etudiant={formModal.etudiant}
-        onClose={() => setFormModal({ open: false, etudiant: null })}
-        onSaved={() => {
+      <ValiderAnneeModal
+        open={validerAnneeModalOpen}
+        onClose={() => setValiderAnneeModalOpen(false)}
+        onValide={() => {
           clearSelection();
           refetch();
         }}

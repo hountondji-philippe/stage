@@ -13,16 +13,18 @@ export async function getEtudiants({
   filiereId = "",
   annee_scolaire = "",
   compteActive = "",
+  anneeValidee = "",
 } = {}) {
   const { data } = await apiClient.get(BASE_URL, {
     params: {
       recherche: recherche || undefined,
       filiere_id: filiereId || undefined,
       annee_scolaire: annee_scolaire || undefined,
-      compte_active: compteActive === "" ? undefined : compteActive, // "1" | "0" | undefined
+      compte_active: compteActive === "" ? undefined : compteActive,
+      annee_validee: anneeValidee === "" ? undefined : anneeValidee,
     },
   });
-  return data; // { data: [...], current_page, last_page, total, ... }
+  return data;
 }
 
 /**

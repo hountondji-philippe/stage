@@ -1,4 +1,4 @@
-import { Pencil, Trash2, CheckCircle2, Circle } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import StatusBadge from "../../../components/ui/StatusBadge";
 
 export default function EtudiantsTable({
@@ -43,7 +43,6 @@ export default function EtudiantsTable({
             <th className="p-4 text-sm font-bold text-gray-900">Filière</th>
             <th className="p-4 text-sm font-bold text-gray-900">Année scolaire</th>
             <th className="p-4 text-sm font-bold text-gray-900">Compte</th>
-            <th className="p-4 text-sm font-bold text-gray-900">Année validée</th>
             <th className="p-4 text-right text-sm font-bold text-gray-900">Actions</th>
           </tr>
         </thead>
@@ -76,19 +75,6 @@ export default function EtudiantsTable({
                 <td className="p-4 text-sm text-gray-600">{etudiant.annee_scolaire}</td>
                 <td className="p-4">
                   <StatusBadge status={etudiant.compte_active ? "actif" : "non_active"} />
-                </td>
-                <td className="p-4">
-                  {etudiant.annee_validee ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                      <CheckCircle2 size={13} />
-                      Validée
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">
-                      <Circle size={13} />
-                      Non validée
-                    </span>
-                  )}
                 </td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-1">

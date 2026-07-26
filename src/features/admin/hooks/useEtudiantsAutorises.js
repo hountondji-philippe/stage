@@ -12,7 +12,7 @@ export function useEtudiantsAutorises() {
 
   const [search, setSearch] = useState("");
   const [filiere, setFiliere] = useState("");
-  const [statutFiltre, setStatutFiltre] = useState(""); // "" | "1" | "0"
+  const [statutFiltre, setStatutFiltre] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
 
   const fetchEtudiants = useCallback(async () => {
@@ -23,8 +23,8 @@ export function useEtudiantsAutorises() {
         recherche: search,
         filiereId: filiere,
         compteActive: statutFiltre,
+        anneeValidee: "1",
       });
-      // Réponse paginée Laravel : { data: [...], current_page, last_page, total, ... }
       setEtudiants(response.data ?? response);
     } catch (err) {
       setError("Impossible de charger la liste des étudiants.");
@@ -33,7 +33,6 @@ export function useEtudiantsAutorises() {
     }
   }, [search, filiere, statutFiltre]);
 
-  // Recherche différée (debounce) pour éviter un appel API à chaque frappe
   useEffect(() => {
     const timeout = setTimeout(fetchEtudiants, 300);
     return () => clearTimeout(timeout);
@@ -56,8 +55,6 @@ export function useEtudiantsAutorises() {
   }
 
   async function removeOne(id) {
-    // Peut throw (ex: 409 "compte actif") — laissé volontairement à l'appelant,
-    // pour qu'il affiche err.response.data.message sans refermer la modale.
     await deleteEtudiant(id);
     setSelectedIds((prev) => prev.filter((x) => x !== id));
     await fetchEtudiants();

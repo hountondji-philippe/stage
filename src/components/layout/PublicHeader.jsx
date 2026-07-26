@@ -6,7 +6,6 @@ import { ROUTES } from "../../router/paths";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 
 const NAV_LINKS = [
-  { to: ROUTES.accueil, label: "Accueil" },
   { to: ROUTES.archive, label: "Archives" },
   { to: ROUTES.actualites, label: "Actualités" },
   { to: ROUTES.aPropos, label: "À propos" },
@@ -50,7 +49,7 @@ export default function PublicHeader() {
   return (
     <header className="fixed left-0 top-0 z-50 h-20 w-full bg-white shadow-sm">
       <div className="mx-auto flex h-full max-w-[1280px] items-center justify-between px-4 md:px-12">
-        <Link to={ROUTES.accueil} className="flex items-center gap-2.5">
+        <Link to={ROUTES.archive} className="flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary)]">
             <GraduationCap size={20} className="text-white" />
           </div>
