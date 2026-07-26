@@ -119,7 +119,7 @@ $memoires = $query->paginate(12);
 
     return response()->json(['memoires' => $memoires]);
 }
-   public function monFichier(Request $request, Memoire $memoire, string $type)
+ public function monFichier(Request $request, Memoire $memoire, string $type)
 {
     if (!$this->peutAccederAuFichier($request, $memoire)) {
         return response()->json(['message' => 'Action non autorisée.'], 403);
@@ -127,6 +127,12 @@ $memoires = $query->paginate(12);
 
     if (!in_array($type, ['memoire', 'preuve'])) {
         abort(404);
+    }
+
+    if ($type === 'preuve' && $memoire->estBinome() && !$memoire->binome_confirme) {
+        return response()->json([
+            'message' => 'La fiche de preuve sera disponible dès que votre binôme aura confirmé ce dépôt.',
+        ], 403);
     }
 
     $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
@@ -138,6 +144,12 @@ public function monTelechargement(Request $request, Memoire $memoire, string $ty
 {
     if (!$this->peutAccederAuFichier($request, $memoire)) {
         abort(403);
+    }
+
+    if ($type === 'preuve' && $memoire->estBinome() && !$memoire->binome_confirme) {
+        return response()->json([
+            'message' => 'La fiche de preuve sera disponible dès que votre binôme aura confirmé ce dépôt.',
+        ], 403);
     }
 
     $chemin = match ($type) {
@@ -338,6 +350,8 @@ public function update(Request $request, Memoire $memoire)
         'cycle' => 'sometimes|in:licence,master',
         'encadrant' => 'sometimes|string|max:255',
         'fichier_memoire' => 'sometimes|file|mimes:pdf|max:10240',
+        'mode_depot' => 'sometimes|in:unique,binome',
+        'matricule_binome' => 'required_if:mode_depot,binome|nullable|string|exists:etudiants_autorises,matricule',
     ]);
 
     if ($validator->fails()) {
@@ -352,7 +366,8 @@ public function update(Request $request, Memoire $memoire)
         || $request->filled('titre')
         || $request->filled('encadrant')
         || $request->filled('cycle')
-        || $request->filled('filiere_id');
+        || $request->filled('filiere_id')
+        || $request->filled('mode_depot');
 
     if ($request->hasFile('fichier_memoire')) {
         Storage::disk('local')->delete($memoire->fichier_memoire);
@@ -360,12 +375,47 @@ public function update(Request $request, Memoire $memoire)
     }
 
     $etaitRejete = $memoire->estRejete();
+    $nouveauModeDepot = $request->input('mode_depot', $memoire->mode_depot);
+    $nouveauMatriculeBinome = $request->input('matricule_binome', $memoire->matricule_binome);
+    $emailBinomeAPrevenir = null;
 
     if ($etaitRejete) {
-        $donnees['statut'] = 'en_attente';
         $donnees['motif_rejet'] = null;
         $donnees['valide_par'] = null;
         $donnees['valide_le'] = null;
+
+        if ($nouveauModeDepot === 'binome') {
+            if ($nouveauMatriculeBinome === $request->user()->etudiantAutorise?->matricule) {
+                return response()->json([
+                    'message' => 'Le matricule du binôme ne peut pas être le vôtre.',
+                ], 422);
+            }
+
+            $etudiantBinome = EtudiantAutorise::where('matricule', $nouveauMatriculeBinome)->first();
+
+            if (!$etudiantBinome || !$etudiantBinome->compte_active) {
+                return response()->json([
+                    'message' => 'Ce matricule ne correspond à aucun étudiant autorisé actif.',
+                ], 422);
+            }
+
+            $donnees['mode_depot'] = 'binome';
+            $donnees['matricule_binome'] = $nouveauMatriculeBinome;
+            $donnees['nom_binome'] = $etudiantBinome->nom;
+            $donnees['prenom_binome'] = $etudiantBinome->prenom;
+            $donnees['statut'] = 'en_attente_binome';
+            $donnees['binome_confirme'] = false;
+            $donnees['binome_token'] = Str::random(48);
+            $emailBinomeAPrevenir = $etudiantBinome->email;
+        } else {
+            $donnees['mode_depot'] = 'unique';
+            $donnees['matricule_binome'] = null;
+            $donnees['nom_binome'] = null;
+            $donnees['prenom_binome'] = null;
+            $donnees['statut'] = 'en_attente';
+            $donnees['binome_confirme'] = true;
+            $donnees['binome_token'] = null;
+        }
     }
 
     $memoire->update($donnees);
@@ -379,10 +429,19 @@ public function update(Request $request, Memoire $memoire)
         $memoire->update(['fichier_preuve' => $cheminFiche]);
     }
 
+    if ($emailBinomeAPrevenir) {
+        \Illuminate\Support\Facades\Mail::to($emailBinomeAPrevenir)
+            ->send(new \App\Mail\ConfirmationBinomeMail($memoire));
+    }
+
+    $message = match (true) {
+        $etaitRejete && $memoire->estEnAttenteBinome() => 'Mémoire corrigé. En attente de confirmation de votre binôme.',
+        $etaitRejete => 'Mémoire corrigé et renvoyé pour validation.',
+        default => 'Mémoire mis à jour avec succès.',
+    };
+
     return response()->json([
-        'message' => $etaitRejete
-            ? 'Mémoire corrigé et renvoyé pour validation.'
-            : 'Mémoire mis à jour avec succès.',
+        'message' => $message,
         'memoire' => $memoire,
     ]);
 }
