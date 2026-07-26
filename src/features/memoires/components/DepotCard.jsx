@@ -26,7 +26,18 @@ function formatDate(dateStr) {
 export default function DepotCard({ depot }) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { id, titre, statut, filiere, created_at, motif_rejet, fichier_preuve, user_id, matricule_binome } = depot;
+  const {
+    id,
+    titre,
+    statut,
+    filiere,
+    created_at,
+    motif_rejet,
+    fichier_preuve,
+    user_id,
+    matricule_binome,
+    binome_token,
+  } = depot;
 
   const [menuOuvert, setMenuOuvert] = useState(false);
   const menuRef = useRef(null);
@@ -37,9 +48,14 @@ export default function DepotCard({ depot }) {
   const estBinome = !estProprietaire && matriculeConnecte && matriculeConnecte === matricule_binome;
 
   const modifiable = estProprietaire && (statut === "en_attente" || statut === "rejete");
+  const enAttenteConfirmationBinome = statut === "en_attente_binome";
 
   function handleVoirDetail() {
     navigate(ROUTES.memoireDetailEtudiant(id));
+  }
+
+  function handleAllerConfirmation() {
+    navigate(ROUTES.binomeConfirmation(binome_token));
   }
 
   useEffect(() => {
@@ -81,17 +97,21 @@ export default function DepotCard({ depot }) {
           <span className="text-xs text-gray-400">Déposé le {formatDate(created_at)}</span>
         </div>
 
-        <button
-          onClick={handleVoirDetail}
-          className="text-left text-lg font-bold text-[var(--color-primary)] hover:underline"
-        >
-          {titre}
-        </button>
+        {enAttenteConfirmationBinome && estBinome ? (
+          <span className="text-left text-lg font-bold text-[var(--color-primary)]">{titre}</span>
+        ) : (
+          <button
+            onClick={handleVoirDetail}
+            className="text-left text-lg font-bold text-[var(--color-primary)] hover:underline"
+          >
+            {titre}
+          </button>
+        )}
 
-        {statut === "en_attente_binome" && (
+        {enAttenteConfirmationBinome && (
           <p className="mt-1.5 text-sm text-gray-500">
             {estBinome
-              ? "Consultez l'email reçu pour confirmer ou refuser ce dépôt."
+              ? "Consultez l'email reçu, ou cliquez sur \"Confirmer / Refuser\" ci-contre."
               : "En attente de la confirmation de votre binôme, reçue par email."}
           </p>
         )}
@@ -117,6 +137,10 @@ export default function DepotCard({ depot }) {
         {modifiable ? (
           <Button variant="outline" onClick={() => navigate(ROUTES.depotEtudiantModifier(id))}>
             Modifier
+          </Button>
+        ) : enAttenteConfirmationBinome && estBinome ? (
+          <Button variant="primary" onClick={handleAllerConfirmation}>
+            Confirmer / Refuser
           </Button>
         ) : (
           <Button variant="primary" onClick={handleVoirDetail}>

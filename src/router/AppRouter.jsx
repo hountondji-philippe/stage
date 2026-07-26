@@ -93,7 +93,7 @@ export default function AppRouter() {
             }
           />
           <Route
-  path="/binome/confirmation/:token"
+  path="/espace/confirmation-binome/:token"
   element={
     <RouteProtegee rolesAutorises={["etudiant"]} redirectTo={ROUTES.connexionEtudiant}>
       <ConfirmationBinomePage />
