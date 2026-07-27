@@ -1,9 +1,7 @@
-import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, AlertCircle, MoreVertical, Eye, Download, Users } from "lucide-react";
+import { GraduationCap, AlertCircle, Users } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import StatusBadge from "../../../components/ui/StatusBadge";
-import { telechargerFichierAuthentifie } from "../api/memoiresApi";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { ROUTES } from "../../../router/paths";
 
@@ -33,14 +31,10 @@ export default function DepotCard({ depot }) {
     filiere,
     created_at,
     motif_rejet,
-    fichier_preuve,
     user_id,
     matricule_binome,
     binome_token,
   } = depot;
-
-  const [menuOuvert, setMenuOuvert] = useState(false);
-  const menuRef = useRef(null);
 
   // L'utilisateur connecté est-il le binôme (pas le propriétaire) de ce dépôt ?
   const estProprietaire = user?.id === user_id;
@@ -56,27 +50,6 @@ export default function DepotCard({ depot }) {
 
   function handleAllerConfirmation() {
     navigate(ROUTES.binomeConfirmation(binome_token));
-  }
-
-  useEffect(() => {
-    if (!menuOuvert) return;
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuOuvert(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOuvert]);
-
-  function handleConsulterDepuisMenu() {
-    setMenuOuvert(false);
-    handleVoirDetail();
-  }
-
-  function handleTelechargerFiche() {
-    setMenuOuvert(false);
-    telechargerFichierAuthentifie(id, "preuve", `fiche-depot-${id}.pdf`);
   }
 
   return (
@@ -147,38 +120,6 @@ export default function DepotCard({ depot }) {
             Consulter
           </Button>
         )}
-
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOuvert((v) => !v)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50"
-            aria-label="Plus d'options"
-          >
-            <MoreVertical size={18} />
-          </button>
-          {menuOuvert && (
-            <div className="absolute right-0 top-12 z-10 w-52 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg">
-              {modifiable && (
-                <button
-                  onClick={handleConsulterDepuisMenu}
-                  className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <Eye size={16} />
-                  Consulter
-                </button>
-              )}
-              {fichier_preuve && estProprietaire && (
-                <button
-                  onClick={handleTelechargerFiche}
-                  className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <Download size={16} />
-                  Télécharger la fiche de dépôt
-                </button>
-              )}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

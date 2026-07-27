@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, GraduationCap, Calendar, Users, Eye, Download, Share2, CheckCircle2 } from "lucide-react";
+import { User, GraduationCap, Calendar, Users, Eye, CheckCircle2 } from "lucide-react";
 
 function InfoRow({ icon: Icon, label, value }) {
   return (
@@ -15,21 +15,12 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
-export default function InfoCard({ memoire, telechargerUrl }) {
+export default function InfoCard({ memoire }) {
   const [resumeOuvert, setResumeOuvert] = useState(false);
 
   const auteur = memoire.user?.etudiant_autorise
     ? `${memoire.user.etudiant_autorise.prenom} ${memoire.user.etudiant_autorise.nom}`
     : "Auteur inconnu";
-
-  function handleShare() {
-    if (navigator.share) {
-      navigator.share({ title: memoire.titre, url: window.location.href });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert("Lien copié dans le presse-papiers.");
-    }
-  }
 
   return (
     <aside className="w-full md:w-[35%]">
@@ -63,23 +54,6 @@ export default function InfoCard({ memoire, telechargerUrl }) {
           <InfoRow icon={Calendar} label="Année" value={memoire.annee} />
           <InfoRow icon={Users} label="Maître de mémoire" value={memoire.encadrant} />
           <InfoRow icon={Eye} label="Vues" value={`${memoire.views_count ?? 0} lectures`} />
-        </div>
-
-        <div className="mt-2 flex flex-col gap-3">
-          
-          <a   href={telechargerUrl}
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-[var(--color-accent)] py-4 font-bold text-[var(--color-primary)] shadow-md transition-all hover:opacity-90 active:scale-[0.98]"
-          >
-            <Download size={20} />
-            Télécharger le PDF
-          </a>
-          <button
-            onClick={handleShare}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--color-primary)] py-4 font-medium text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary)]/5"
-          >
-            <Share2 size={18} />
-            Partager
-          </button>
         </div>
       </div>
     </aside>

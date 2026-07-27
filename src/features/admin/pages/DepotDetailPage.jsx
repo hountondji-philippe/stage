@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Mail, CheckCircle2 } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import DepotDetailPdfViewer from "../components/DepotDetailPdfViewer";
 import DepotDetailInfoCard from "../components/DepotDetailInfoCard";
@@ -7,6 +8,7 @@ import DepotDetailActions from "../components/DepotDetailActions";
 import StatusBadge from "../../../components/ui/StatusBadge";
 import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useMemoireDetail } from "../hooks/useMemoireDetail";
+import { apiClient } from "../../../lib/apiClient";
 
 export default function DepotDetailPage() {
   const { id } = useParams();
@@ -15,8 +17,27 @@ export default function DepotDetailPage() {
   const { memoire, loading, error } = useMemoireDetail(id, location.state?.memoire);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const [renvoiLoading, setRenvoiLoading] = useState(false);
+  const [renvoiMessage, setRenvoiMessage] = useState(null); // { type: 'succes' | 'erreur', texte }
+
   function retourListe() {
     navigate(-1);
+  }
+
+  async function handleRenvoyerFiche() {
+    setRenvoiLoading(true);
+    setRenvoiMessage(null);
+    try {
+      const { data } = await apiClient.post(`/admin/memoires/${id}/renvoyer-fiche`);
+      setRenvoiMessage({ type: "succes", texte: data.message || "La fiche a été renvoyée par email." });
+    } catch (err) {
+      setRenvoiMessage({
+        type: "erreur",
+        texte: err.response?.data?.message || "Impossible de renvoyer la fiche.",
+      });
+    } finally {
+      setRenvoiLoading(false);
+    }
   }
 
   if (loading) {
@@ -100,11 +121,39 @@ export default function DepotDetailPage() {
                 onValidated={retourListe}
                 onRejected={retourListe}
               />
+            ) : memoire.statut === "valide" ? (
+              <div className="rounded-xl border border-gray-200 bg-white p-6">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-green-700">
+                  <CheckCircle2 size={18} />
+                  Mémoire validé
+                </div>
+                <p className="mb-4 text-sm text-gray-500">
+                  La fiche de dépôt a été envoyée par email à l'étudiant (et à son binôme le cas échéant)
+                  au moment de la validation. Vous pouvez la renvoyer si besoin.
+                </p>
+
+                {renvoiMessage && (
+                  <p
+                    className={`mb-3 text-sm font-medium ${
+                      renvoiMessage.type === "succes" ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {renvoiMessage.texte}
+                  </p>
+                )}
+
+                <button
+                  onClick={handleRenvoyerFiche}
+                  disabled={renvoiLoading}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-[var(--color-primary)] py-3 text-sm font-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-primary)] hover:text-white disabled:opacity-50"
+                >
+                  <Mail size={16} />
+                  {renvoiLoading ? "Envoi en cours..." : "Renvoyer la fiche par email"}
+                </button>
+              </div>
             ) : (
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-                {memoire.statut === "valide"
-                  ? "Ce mémoire a déjà été validé — aucune action de validation possible ici."
-                  : "Ce mémoire a déjà été rejeté — aucune action possible ici."}
+                Ce mémoire a déjà été rejeté — aucune action possible ici.
               </div>
             )}
           </div>

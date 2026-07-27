@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { getMemoireFichierBlob } from "../api/adminService";
 
 export function usePdfViewer(memoireId) {
-  const [activeTab, setActiveTab] = useState("memoire"); // "memoire" | "preuve"
   const [blobUrl, setBlobUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -15,7 +14,7 @@ export function usePdfViewer(memoireId) {
       setLoading(true);
       setError("");
       try {
-        const response = await getMemoireFichierBlob(memoireId, activeTab);
+        const response = await getMemoireFichierBlob(memoireId, "memoire");
         const url = URL.createObjectURL(response.data);
         if (!cancelled) {
           // Libère l'ancien blob avant d'en créer un nouveau (évite les fuites mémoire)
@@ -35,7 +34,7 @@ export function usePdfViewer(memoireId) {
     return () => {
       cancelled = true;
     };
-  }, [memoireId, activeTab]);
+  }, [memoireId]);
 
   // Nettoyage final au démontage du composant
   useEffect(() => {
@@ -48,9 +47,9 @@ export function usePdfViewer(memoireId) {
     if (!blobUrl) return;
     const a = document.createElement("a");
     a.href = blobUrl;
-    a.download = activeTab === "memoire" ? "memoire.pdf" : "preuve-soutenance.pdf";
+    a.download = "memoire.pdf";
     a.click();
   }
 
-  return { activeTab, setActiveTab, blobUrl, loading, error, downloadCurrent };
+  return { blobUrl, loading, error, downloadCurrent };
 }

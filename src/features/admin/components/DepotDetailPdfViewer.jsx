@@ -2,8 +2,7 @@ import { Download, Maximize2, Minimize2 } from "lucide-react";
 import { usePdfViewer } from "../hooks/usePdfViewer";
 
 export default function DepotDetailPdfViewer({ memoireId, isFullscreen, onToggleFullscreen }) {
-  const { activeTab, setActiveTab, blobUrl, loading, error, downloadCurrent } =
-    usePdfViewer(memoireId);
+  const { blobUrl, loading, error, downloadCurrent } = usePdfViewer(memoireId);
 
   return (
     <div
@@ -11,30 +10,9 @@ export default function DepotDetailPdfViewer({ memoireId, isFullscreen, onToggle
         isFullscreen ? "h-[calc(100vh-112px)]" : "h-[520px]"
       }`}
     >
-      {/* Onglets */}
+      {/* Barre d'actions */}
       <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 md:px-6 md:py-4">
-        <div className="flex gap-2 md:gap-3">
-          <button
-            onClick={() => setActiveTab("memoire")}
-            className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors md:px-4 md:text-sm ${
-              activeTab === "memoire"
-                ? "border-2 border-[var(--color-primary)] bg-white text-[var(--color-primary)]"
-                : "text-gray-500 hover:bg-gray-100"
-            }`}
-          >
-            Mémoire (PDF)
-          </button>
-          <button
-            onClick={() => setActiveTab("preuve")}
-            className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors md:px-4 md:text-sm ${
-              activeTab === "preuve"
-                ? "border-2 border-[var(--color-primary)] bg-white text-[var(--color-primary)]"
-                : "text-gray-500 hover:bg-gray-100"
-            }`}
-          >
-            Preuve de soutenance (PDF)
-          </button>
-        </div>
+        <span className="text-sm font-semibold text-gray-700">Mémoire (PDF)</span>
 
         <div className="flex items-center gap-1">
           <button
@@ -46,7 +24,6 @@ export default function DepotDetailPdfViewer({ memoireId, isFullscreen, onToggle
             <span className="hidden md:inline">Télécharger</span>
           </button>
 
-          {/* Bouton agrandir / réduire */}
           <button
             onClick={onToggleFullscreen}
             className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-200"

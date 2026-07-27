@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, CheckCircle2, Download, Lock } from "lucide-react";
+import { ChevronRight, CheckCircle2, Lock } from "lucide-react";
 import EtudiantLayout from "../components/EtudiantLayout";
 import AdminLayout from "../../admin/components/AdminLayout";
 import Stepper from "../components/depot/Stepper";
@@ -13,7 +13,6 @@ import { useDepotForm } from "../hooks/useDepotForm";
 import { useFilieres } from "../hooks/useFilieres";
 import { usePeriodeDepot } from "../hooks/usePeriodeDepot";
 import { useAuth } from "../../auth/hooks/useAuth";
-import { telechargerFichierAuthentifie } from "../api/memoiresApi";
 import { ROUTES } from "../../../router/paths";
 
 const LABELS_ETUDIANT = ["Sélection", "Informations", "Documents", "Récapitulatif"];
@@ -141,15 +140,7 @@ export default function DepotMemoirePage({ mode = "etudiant" }) {
               : "Votre mémoire est maintenant en attente de validation par l'administration."}
           </p>
 
-          {!isAdmin && createdMemoireId && (
-            <Button
-              variant="outline"
-              className="mb-3"
-              onClick={() => telechargerFichierAuthentifie(createdMemoireId, "preuve", "fiche-depot.pdf")}
-            >
-              <Download size={16} /> Télécharger la fiche de dépôt
-            </Button>
-          )}
+          
 
           <Button
             variant="primary"

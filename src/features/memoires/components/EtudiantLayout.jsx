@@ -144,12 +144,7 @@ export default function EtudiantLayout({ children }) {
         </div>
 
         <div className="flex items-center gap-4">
-          <button
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
-            aria-label="Notifications"
-          >
-            <Bell size={19} />
-          </button>
+          
 
           <div className="relative">
             <button
