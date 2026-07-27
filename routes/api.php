@@ -78,7 +78,8 @@ Route::middleware(['auth:sanctum', 'lecture.seule'])->group(function () {
         Route::get('/admin/periodes-depot', [PeriodeDepotController::class, 'index']);
         Route::post('/admin/periodes-depot/lancer', [PeriodeDepotController::class, 'lancer']);
         Route::post('/admin/periodes-depot/{periodeDepot}/fermer', [PeriodeDepotController::class, 'fermer']);
-
+        Route::post('/admin/memoires/{memoire}/renvoyer-fiche', [MemoireController::class, 'renvoyerFiche']);
+        
         Route::apiResource('/admin/etudiants-autorises', EtudiantAutoriseController::class)
             ->parameters(['etudiants-autorises' => 'etudiantAutorise']);
 

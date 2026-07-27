@@ -129,9 +129,9 @@ $memoires = $query->paginate(12);
         abort(404);
     }
 
-    if ($type === 'preuve' && $memoire->estBinome() && !$memoire->binome_confirme) {
+    if ($type === 'preuve' && !$memoire->estValide()) {
         return response()->json([
-            'message' => 'La fiche de preuve sera disponible dès que votre binôme aura confirmé ce dépôt.',
+            'message' => 'La fiche de dépôt sera disponible dès que votre mémoire aura été validé par la scolarité.',
         ], 403);
     }
 
@@ -146,9 +146,9 @@ public function monTelechargement(Request $request, Memoire $memoire, string $ty
         abort(403);
     }
 
-    if ($type === 'preuve' && $memoire->estBinome() && !$memoire->binome_confirme) {
+    if ($type === 'preuve' && !$memoire->estValide()) {
         return response()->json([
-            'message' => 'La fiche de preuve sera disponible dès que votre binôme aura confirmé ce dépôt.',
+            'message' => 'La fiche de dépôt sera disponible dès que votre mémoire aura été validé par la scolarité.',
         ], 403);
     }
 
@@ -313,9 +313,6 @@ public function store(Request $request)
             'memoire' => $memoire,
         ], 201);
     }
-
-    \Illuminate\Support\Facades\Mail::to($request->user()->email)
-        ->send(new \App\Mail\FicheDepotMail($memoire, $etudiant1->prenom ?? ''));
 
     return response()->json([
         'message' => 'Mémoire déposé avec succès. Il sera examiné par l\'administration.',
@@ -645,9 +642,53 @@ private function encoderLogo(string $chemin): ?string
             'valide_le' => now(),
         ]);
 
+        $this->envoyerFicheDepot($memoire);
+
         return response()->json([
             'message' => 'Mémoire validé et publié.',
             'memoire' => $memoire,
+        ]);
+    }
+
+    /**
+     * Envoie la fiche de dépôt par email au déposant, et au binôme
+     * confirmé s'il y en a un. Appelée à la validation, et réutilisable
+     * pour un renvoi manuel par l'admin (voir renvoyerFiche()).
+     */
+    private function envoyerFicheDepot(Memoire $memoire): void
+    {
+        $memoire->loadMissing('user.etudiantAutorise');
+        $etudiant1 = $memoire->user->etudiantAutorise;
+
+        \Illuminate\Support\Facades\Mail::to($memoire->user->email)
+            ->send(new \App\Mail\FicheDepotMail($memoire, $etudiant1->prenom ?? ''));
+
+        if ($memoire->estBinome() && $memoire->matricule_binome) {
+            $etudiantBinome = EtudiantAutorise::where('matricule', $memoire->matricule_binome)->first();
+
+            if ($etudiantBinome && $etudiantBinome->email) {
+                \Illuminate\Support\Facades\Mail::to($etudiantBinome->email)
+                    ->send(new \App\Mail\FicheDepotMail($memoire, $etudiantBinome->prenom ?? ''));
+            }
+        }
+    }
+
+    /**
+     * Permet à l'admin de renvoyer la fiche de dépôt par email,
+     * si l'étudiant n'a pas reçu ou retrouvé le premier envoi.
+     */
+    public function renvoyerFiche(Memoire $memoire)
+    {
+        if (!$memoire->estValide()) {
+            return response()->json([
+                'message' => 'La fiche ne peut être renvoyée qu\'une fois le mémoire validé.',
+            ], 409);
+        }
+
+        $this->envoyerFicheDepot($memoire);
+
+        return response()->json([
+            'message' => 'La fiche de dépôt a été renvoyée par email.',
         ]);
     }
 
@@ -809,12 +850,6 @@ public function afficherConfirmationBinome(Request $request, string $token)
             'binome_confirme' => true,
             'binome_confirme_le' => now(),
         ]);
-
-        $etudiantAuteur = $memoire->user->etudiantAutorise;
-        \Illuminate\Support\Facades\Mail::to($memoire->user->email)
-            ->send(new \App\Mail\FicheDepotMail($memoire, $etudiantAuteur->prenom ?? ''));
-        \Illuminate\Support\Facades\Mail::to($request->user()->email)
-            ->send(new \App\Mail\FicheDepotMail($memoire, $request->user()->etudiantAutorise->prenom ?? ''));
 
         return response()->json([
             'message' => 'Dépôt confirmé. Il est désormais transmis à la scolarité.',
