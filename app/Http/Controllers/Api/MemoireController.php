@@ -460,6 +460,7 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
 
     $logoUac = $this->encoderLogo(public_path('images/logo-uac.png'));
     $logoEneam = $this->encoderLogo(public_path('images/logo-memoires-plus.png'));
+    $qrCode = $this->genererQrVerification($memoire);
 
     Pdf::loadView('pdf.fiche-depot', [
         'memoire' => $memoire,
@@ -467,9 +468,55 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
         'etudiant2' => $etudiant2,
         'logoUac' => $logoUac,
         'logoEneam' => $logoEneam,
+        'qrCode' => $qrCode,
     ])->save($cheminComplet);
 
     return $nomFichier;
+}
+
+private function genererQrVerification(Memoire $memoire): string
+{
+    $url = \Illuminate\Support\Facades\URL::signedRoute('memoire.verification', ['memoire' => $memoire->id]);
+
+    $svg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(200)
+        ->margin(1)
+        ->generate($url);
+
+    return 'data:image/svg+xml;base64,' . base64_encode($svg);
+}
+
+/**
+ * Page publique ouverte par le QR code — accessible sans compte,
+ * uniquement protégée par la signature du lien.
+ */
+public function verifierFiche(Memoire $memoire)
+{
+    if (!$memoire->estValide()) {
+        abort(404);
+    }
+
+    $memoire->loadMissing(['user.etudiantAutorise', 'filiere']);
+
+    $etudiant1 = $memoire->user->etudiantAutorise;
+    $etudiant2 = null;
+    if ($memoire->estBinome() && $memoire->matricule_binome) {
+        $etudiant2 = EtudiantAutorise::where('matricule', $memoire->matricule_binome)->first();
+    }
+
+    return view('verification.memoire', [
+        'memoire' => $memoire,
+        'etudiant1' => $etudiant1,
+        'etudiant2' => $etudiant2,
+    ]);
+}
+
+public function telechargerVerification(Memoire $memoire)
+{
+    if (!$memoire->estValide()) {
+        abort(404);
+    }
+
+    return Storage::disk('local')->response($memoire->fichier_memoire);
 }
 
 private function encoderLogo(string $chemin): ?string

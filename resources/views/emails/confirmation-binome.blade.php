@@ -4,7 +4,7 @@
     <p style="margin:0 0 4px; color:#7A7666; font-size:11px; text-transform:uppercase; letter-spacing:1px; font-family: Arial, sans-serif;">
         Dépôt en binôme
     </p>
-    <h2 style="margin:0 0 20px; color:#16233F; font-size:22px; font-family: Georgia, serif;">
+    <h2 style="margin:0 0 20px; color:#0F2474; font-size:22px; font-family: Georgia, serif;">
         Confirmation de votre participation
     </h2>
 
@@ -12,10 +12,10 @@
         <strong>{{ $memoire->user->etudiantAutorise->prenom ?? '' }} {{ $memoire->user->etudiantAutorise->nom ?? '' }}</strong> vous a désigné comme binôme pour le mémoire suivant :
     </p>
 
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F7F5F0; border-left:3px solid #C9A34E; margin:0 0 20px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F7F5F0; border-left:3px solid #D9A62E; margin:0 0 20px;">
         <tr>
             <td style="padding:16px 20px;">
-                <p style="margin:0 0 4px; color:#16233F; font-size:15px; font-weight:bold;">{{ $memoire->titre }}</p>
+                <p style="margin:0 0 4px; color:#0F2474; font-size:15px; font-weight:bold;">{{ $memoire->titre }}</p>
                 <p style="margin:0; color:#7A7666; font-size:13px;">Année {{ $memoire->annee }} — Cycle {{ $memoire->cycle }}</p>
             </td>
         </tr>

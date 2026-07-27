@@ -72,6 +72,17 @@
     </table>
 
     <p class="note-finale">Veuillez vous rapprocher de l'administration pour effectuer le dépôt physique.</p>
+    
+    <table style="width:100%; margin-top:25px;">
+    <tr>
+        <td style="width:100px; vertical-align:top;">
+            <img src="{{ $qrCode }}" style="width:90px; height:90px;">
+        </td>
+        <td style="vertical-align:top; font-size:10px; color:#555; padding-left:10px;">
+            Scannez ce code pour vérifier l'authenticité de ce document et accéder à la version officielle hébergée par l'ENEAM.
+        </td>
+    </tr>
+</table>
 
     <div class="footer">
         Document généré le {{ now()->format('d/m/Y') }} — Portail Mémoires+

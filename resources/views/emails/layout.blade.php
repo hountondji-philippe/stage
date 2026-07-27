@@ -12,13 +12,13 @@
 
                     <!-- En-tête -->
                     <tr>
-                        <td style="padding:32px 40px 24px; border-bottom:3px solid #C9A34E;">
+                        <td style="padding:32px 40px 24px; background:#001369; background:linear-gradient(135deg, #001369 0%, #2545C1 100%);">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td style="font-family: Georgia, serif; color:#16233F; font-size:20px; font-weight:bold;">
-                                        Mémoires<span style="color:#C9A34E;">+</span>
+                                    <td style="font-family: Georgia, serif; color:#FFFFFF; font-size:20px; font-weight:bold;">
+                                        Mémoires<span style="color:#D9A62E;">+</span>
                                     </td>
-                                    <td align="right" style="font-family: Arial, sans-serif; color:#7A7666; font-size:11px; letter-spacing:1px; text-transform:uppercase;">
+                                    <td align="right" style="font-family: Arial, sans-serif; color:#D9A62E; font-size:11px; letter-spacing:1px; text-transform:uppercase;">
                                         ENEAM
                                     </td>
                                 </tr>

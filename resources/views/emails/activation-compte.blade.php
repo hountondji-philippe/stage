@@ -4,7 +4,7 @@
     <p style="margin:0 0 4px; color:#7A7666; font-size:11px; text-transform:uppercase; letter-spacing:1px; font-family: Arial, sans-serif;">
         Activation de compte
     </p>
-    <h2 style="margin:0 0 20px; color:#16233F; font-size:22px; font-family: Georgia, serif;">
+    <h2 style="margin:0 0 20px; color:#0F2474; font-size:22px; font-family: Georgia, serif;">
         Bienvenue, {{ $etudiantAutorise->prenom }}
     </h2>
 
