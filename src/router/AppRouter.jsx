@@ -39,18 +39,59 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Suspense fallback={<LoadingScreen message="Chargement..." />}>
-        <Routes>
-          {/* --- Espace AVEC Header et Footer --- */}
-          <Route element={<PublicLayout />}>
-            <Route path="/memoires/:id" element={<MemoireDetailPage />} />
-            <Route path={ROUTES.aPropos} element={<AProposPage />} />
-            <Route path={ROUTES.activation(":token")} element={<ActivationPage />} />
-            <Route path={ROUTES.motDePasseOublie} element={<MotDePasseOubliePage />} />
-            <Route path="/reinitialiser-mot-de-passe/:token" element={<ReinitialiserMotDePassePage />} />
-            <Route path={ROUTES.archive} element={<SearchPage />} />
-             <Route path={ROUTES.actualites} element={<ActualitesPage />} />
-             <Route path={ROUTES.actualiteDetail(":id")} element={<ActualiteDetailPage />} />
-          </Route>
+       <Routes>
+  {/* --- Espace AVEC Header et Footer --- */}
+  <Route element={<PublicLayout />}>
+    {/* Pages qui doivent rester accessibles sans connexion (flux d'authentification) */}
+    <Route path={ROUTES.activation(":token")} element={<ActivationPage />} />
+    <Route path={ROUTES.motDePasseOublie} element={<MotDePasseOubliePage />} />
+    <Route path="/reinitialiser-mot-de-passe/:token" element={<ReinitialiserMotDePassePage />} />
+
+    <Route
+  path={ROUTES.archive}
+  element={
+    <RouteProtegee
+      rolesAutorises={["etudiant", "admin"]}
+      redirectTo={ROUTES.inscription}
+      autoriserLectureSeule
+    >
+      <SearchPage />
+    </RouteProtegee>
+  }
+/>
+<Route
+  path={ROUTES.actualites}
+  element={
+    <RouteProtegee rolesAutorises={["etudiant", "admin"]} redirectTo={ROUTES.inscription} autoriserLectureSeule>
+      <ActualitesPage />
+    </RouteProtegee>
+  }
+/>
+<Route
+  path={ROUTES.actualiteDetail(":id")}
+  element={
+    <RouteProtegee rolesAutorises={["etudiant", "admin"]} redirectTo={ROUTES.inscription} autoriserLectureSeule>
+      <ActualiteDetailPage />
+    </RouteProtegee>
+  }
+/>
+<Route
+  path="/memoires/:id"
+  element={
+    <RouteProtegee rolesAutorises={["etudiant", "admin"]} redirectTo={ROUTES.inscription} autoriserLectureSeule>
+      <MemoireDetailPage />
+    </RouteProtegee>
+  }
+/>
+<Route
+  path={ROUTES.aPropos}
+  element={
+    <RouteProtegee rolesAutorises={["etudiant", "admin"]} redirectTo={ROUTES.inscription} autoriserLectureSeule>
+      <AProposPage />
+    </RouteProtegee>
+  }
+/>
+  </Route>
 
           {/* --- Espace SANS Header et Footer --- */}
           {/* La racine du site affiche directement le formulaire d'inscription */}

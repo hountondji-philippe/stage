@@ -36,12 +36,10 @@ export function useLoginEtudiant() {
       const data = await loginRequest({ email: form.email, password: form.password });
 
       if (data.user?.role !== "etudiant") {
-        setServerError(
-          "Ce compte n'est pas un compte étudiant. Utilisez l'espace administrateur pour vous connecter."
-        );
-        setLoading(false);
-        return;
-      }
+  setServerError("Email ou mot de passe incorrect.");
+  setLoading(false);
+  return;
+}
 
       localStorage.setItem("mplus_token", data.token);
       localStorage.removeItem("mplus_lecture_seule");

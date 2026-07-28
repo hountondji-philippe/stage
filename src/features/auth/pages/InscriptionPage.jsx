@@ -1,12 +1,14 @@
 import { GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useInscription } from "../hooks/useInscription";
+import { useAuth } from "../../auth/hooks/useAuth";
 import MatriculeStep from "../components/MatriculeStep";
 import BrandPanel from "../components/BrandPanel";
 import { ROUTES } from "../../../router/paths";
 
 export default function InscriptionPage() {
   const navigate = useNavigate();
+  const { refetchUser } = useAuth();
   const {
     matricule,
     setMatricule,
@@ -27,11 +29,12 @@ export default function InscriptionPage() {
   } = useInscription();
 
   async function handleVerifierCode() {
-  const succes = await verifierCode();
-  if (succes) {
-    navigate(ROUTES.archive);
+    const succes = await verifierCode();
+    if (succes) {
+      await refetchUser(); // force AuthContext à relire le localStorage avant de naviguer
+      navigate(ROUTES.archive);
+    }
   }
-}
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 md:p-0 md:items-stretch">

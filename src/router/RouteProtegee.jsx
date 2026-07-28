@@ -1,8 +1,13 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../features/auth/hooks/useAuth";
 
-export default function RouteProtegee({ children, rolesAutorises, redirectTo = "/connexion-etudiant" }) {
-  const { user, loading } = useAuth();
+export default function RouteProtegee({
+  children,
+  rolesAutorises,
+  redirectTo = "/connexion-etudiant",
+  autoriserLectureSeule = false,
+}) {
+  const { user, lectureSeule, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -11,6 +16,11 @@ export default function RouteProtegee({ children, rolesAutorises, redirectTo = "
         Chargement...
       </div>
     );
+  }
+
+  // Accès "lecture seule" (code L2) autorisé explicitement sur cette route
+  if (autoriserLectureSeule && lectureSeule) {
+    return children;
   }
 
   if (!user) {

@@ -95,12 +95,12 @@ export default function ConnexionEtudiantForm() {
           <span className="text-xs text-gray-400">ou</span>
           <div className="h-px flex-1 bg-gray-200" />
         </div>
-        <Link
+       <Link
   to={ROUTES.archive}
   className="flex items-center justify-center gap-2 text-sm text-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
 >
   <Globe className="h-4 w-4" />
-  Consulter les mémoires sans compte
+  Pas de compte ? Consulter avec votre matricule
 </Link>
       </div>
 
