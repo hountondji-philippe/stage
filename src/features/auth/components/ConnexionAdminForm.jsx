@@ -99,13 +99,7 @@ export default function ConnexionAdminForm() {
           <span className="text-xs text-gray-400">ou</span>
           <div className="h-px flex-1 bg-gray-200" />
         </div>
-        <Link
-          to={ROUTES.recherche}
-          className="flex items-center justify-center gap-2 text-sm text-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
-        >
-          <Globe className="h-4 w-4" />
-          Consulter les mémoires sans compte
-        </Link>
+       
       </div>
 
       <p className="text-center text-sm text-gray-500">
