@@ -7,8 +7,8 @@ export default function ConnexionAdminPage() {
     <main className="relative flex min-h-screen flex-col overflow-hidden md:flex-row">
       <BrandPanel
         title="Gérez les dépôts, validez les mémoires et administrez les accès de la plateforme."
-        linkText="Consulter les mémoires publiques"
-        linkTo="/archive"
+        
+        
         badgeText="Espace administrateur"
       />
 
