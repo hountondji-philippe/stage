@@ -88,7 +88,7 @@ $memoires = $query->paginate(12);
             abort(404);
         }
 
-        return Storage::disk('local')->response($memoire->fichier_memoire);
+        return Storage::disk('s3')->response($memoire->fichier_memoire);
     }
 
     public function telechargerPublic(Memoire $memoire)
@@ -97,7 +97,7 @@ $memoires = $query->paginate(12);
             abort(404);
         }
 
-        return Storage::disk('local')->download(
+        return Storage::disk('s3')->download(
             $memoire->fichier_memoire,
             Str::slug($memoire->titre) . '.pdf'
         );
@@ -137,7 +137,7 @@ $memoires = $query->paginate(12);
 
     $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
 
-    return Storage::disk('local')->response($chemin);
+    return Storage::disk('s3')->response($chemin);
 }
 
 public function monTelechargement(Request $request, Memoire $memoire, string $type)
@@ -162,7 +162,7 @@ public function monTelechargement(Request $request, Memoire $memoire, string $ty
         abort(404);
     }
 
-    return Storage::disk('local')->download(
+    return Storage::disk('s3')->download(
         $chemin,
         Str::slug($memoire->titre) . '-' . $type . '.pdf'
     );
@@ -253,27 +253,37 @@ public function store(Request $request)
         $prenomBinome = $etudiantBinome->prenom;
     }
 
-    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
-    $cheminApercu = null;
-    try {
-        $cheminPdf = Storage::disk('local')->path($cheminMemoire);
-        $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
-        Storage::disk('local')->makeDirectory('apercus');
-        $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
+    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 's3');
+$cheminApercu = null;
+try {
+    $cheminTempSource = storage_path('app/temp/' . Str::random(40) . '.pdf');
+    $cheminTempApercu = storage_path('app/temp/' . Str::random(40) . '.jpg');
 
-        $resultat = Process::run([
-            config('app.ghostscript_path'),
-            '-dNOPAUSE', '-dBATCH', '-sDEVICE=jpeg', '-r100',
-            '-dFirstPage=1', '-dLastPage=1',
-            '-sOutputFile=' . $cheminApercuComplet,
-            $cheminPdf,
-        ]);
+    if (!is_dir(dirname($cheminTempSource))) {
+        mkdir(dirname($cheminTempSource), 0755, true);
+    }
 
-        if ($resultat->successful() && file_exists($cheminApercuComplet)) {
-            $cheminApercu = $nomApercu;
-        }
-    } catch (\Exception $e) {
-        $cheminApercu = null;
+    file_put_contents($cheminTempSource, Storage::disk('s3')->get($cheminMemoire));
+
+    $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
+    $resultat = Process::run([
+        config('app.ghostscript_path'),
+        '-dNOPAUSE', '-dBATCH', '-sDEVICE=jpeg', '-r100',
+        '-dFirstPage=1', '-dLastPage=1',
+        '-sOutputFile=' . $cheminTempApercu,
+        $cheminTempSource,
+    ]);
+
+    if ($resultat->successful() && file_exists($cheminTempApercu)) {
+        Storage::disk('s3')->put($nomApercu, file_get_contents($cheminTempApercu));
+        $cheminApercu = $nomApercu;
+    }
+
+    unlink($cheminTempSource);
+    if (file_exists($cheminTempApercu)) {
+        unlink($cheminTempApercu);
+    }
+} catch (\Throwable $e) {
     }
 
     $estBinome = $request->mode_depot === 'binome';
@@ -367,8 +377,8 @@ public function update(Request $request, Memoire $memoire)
         || $request->filled('mode_depot');
 
     if ($request->hasFile('fichier_memoire')) {
-        Storage::disk('local')->delete($memoire->fichier_memoire);
-        $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 'local');
+        Storage::disk('s3')->delete($memoire->fichier_memoire);
+        $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 's3');
     }
 
     $etaitRejete = $memoire->estRejete();
@@ -420,7 +430,7 @@ public function update(Request $request, Memoire $memoire)
     if ($regenererFiche) {
         $etudiant1 = $request->user()->etudiantAutorise;
         if ($memoire->fichier_preuve) {
-            Storage::disk('local')->delete($memoire->fichier_preuve);
+            Storage::disk('s3')->delete($memoire->fichier_preuve);
         }
         $cheminFiche = $this->genererFicheDepot($memoire, $etudiant1);
         $memoire->update(['fichier_preuve' => $cheminFiche]);
@@ -445,19 +455,20 @@ public function update(Request $request, Memoire $memoire)
 
 private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant1): string
 {
-    Storage::disk('local')->makeDirectory('fiches');
     $nomFichier = 'fiches/' . Str::random(40) . '.pdf';
-    $cheminComplet = Storage::disk('local')->path($nomFichier);
+    $cheminTemp = storage_path('app/temp/' . Str::random(40) . '.pdf');
+
+    if (!is_dir(dirname($cheminTemp))) {
+        mkdir(dirname($cheminTemp), 0755, true);
+    }
 
     $etudiant1?->load('filiere');
-
     $etudiant2 = null;
     if ($memoire->estBinome() && $memoire->matricule_binome) {
         $etudiant2 = EtudiantAutorise::with('filiere')
             ->where('matricule', $memoire->matricule_binome)
             ->first();
     }
-
     $logoUac = $this->encoderLogo(public_path('images/logo-uac.png'));
     $logoEneam = $this->encoderLogo(public_path('images/logo-memoires-plus.png'));
     $qrCode = $this->genererQrVerification($memoire);
@@ -469,7 +480,10 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
         'logoUac' => $logoUac,
         'logoEneam' => $logoEneam,
         'qrCode' => $qrCode,
-    ])->save($cheminComplet);
+    ])->save($cheminTemp);
+
+    Storage::disk('s3')->put($nomFichier, file_get_contents($cheminTemp));
+    unlink($cheminTemp);
 
     return $nomFichier;
 }
@@ -485,10 +499,7 @@ private function genererQrVerification(Memoire $memoire): string
     return 'data:image/svg+xml;base64,' . base64_encode($svg);
 }
 
-/**
- * Page publique ouverte par le QR code — accessible sans compte,
- * uniquement protégée par la signature du lien.
- */
+
 public function verifierFiche(Memoire $memoire)
 {
     if (!$memoire->estValide()) {
@@ -516,7 +527,7 @@ public function telechargerVerification(Memoire $memoire)
         abort(404);
     }
 
-    return Storage::disk('local')->response($memoire->fichier_memoire);
+    return Storage::disk('s3')->response($memoire->fichier_memoire);
 }
 
 private function encoderLogo(string $chemin): ?string
@@ -585,24 +596,36 @@ private function encoderLogo(string $chemin): ?string
         $prenomBinome = $etudiantBinome->prenom;
     }
 
-    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
+    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 's3');
     $cheminApercu = null;
     try {
-        $cheminPdf = Storage::disk('local')->path($cheminMemoire);
+        $cheminTempSource = storage_path('app/temp/' . Str::random(40) . '.pdf');
+        $cheminTempApercu = storage_path('app/temp/' . Str::random(40) . '.jpg');
+
+        if (!is_dir(dirname($cheminTempSource))) {
+            mkdir(dirname($cheminTempSource), 0755, true);
+        }
+
+        file_put_contents($cheminTempSource, Storage::disk('s3')->get($cheminMemoire));
+
         $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
-        Storage::disk('local')->makeDirectory('apercus');
-        $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
 
         $resultat = Process::run([
             config('app.ghostscript_path'),
             '-dNOPAUSE', '-dBATCH', '-sDEVICE=jpeg', '-r100',
             '-dFirstPage=1', '-dLastPage=1',
-            '-sOutputFile=' . $cheminApercuComplet,
-            $cheminPdf,
+            '-sOutputFile=' . $cheminTempApercu,
+            $cheminTempSource,
         ]);
 
-        if ($resultat->successful() && file_exists($cheminApercuComplet)) {
+        if ($resultat->successful() && file_exists($cheminTempApercu)) {
+            Storage::disk('s3')->put($nomApercu, file_get_contents($cheminTempApercu));
             $cheminApercu = $nomApercu;
+        }
+
+        unlink($cheminTempSource);
+        if (file_exists($cheminTempApercu)) {
+            unlink($cheminTempApercu);
         }
     } catch (\Exception $e) {
         $cheminApercu = null;
@@ -649,7 +672,7 @@ private function encoderLogo(string $chemin): ?string
             ], 409);
         }
 
-        Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
+        Storage::disk('s3')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
         $memoire->delete();
 
         return response()->json([
@@ -672,7 +695,7 @@ private function encoderLogo(string $chemin): ?string
 
         $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
 
-        return Storage::disk('local')->response($chemin);
+        return Storage::disk('s3')->response($chemin);
     }
 
     public function valider(Request $request, Memoire $memoire)
@@ -697,11 +720,6 @@ private function encoderLogo(string $chemin): ?string
         ]);
     }
 
-    /**
-     * Envoie la fiche de dépôt par email au déposant, et au binôme
-     * confirmé s'il y en a un. Appelée à la validation, et réutilisable
-     * pour un renvoi manuel par l'admin (voir renvoyerFiche()).
-     */
     private function envoyerFicheDepot(Memoire $memoire): void
     {
         $memoire->loadMissing('user.etudiantAutorise');
@@ -720,10 +738,7 @@ private function encoderLogo(string $chemin): ?string
         }
     }
 
-    /**
-     * Permet à l'admin de renvoyer la fiche de dépôt par email,
-     * si l'étudiant n'a pas reçu ou retrouvé le premier envoi.
-     */
+    
     public function renvoyerFiche(Memoire $memoire)
     {
         if (!$memoire->estValide()) {
@@ -826,7 +841,7 @@ private function encoderLogo(string $chemin): ?string
 }
     public function supprimerAdmin(Memoire $memoire)
     {
-        Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
+        Storage::disk('s3')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
         $memoire->delete();
 
         return response()->json([
@@ -839,7 +854,7 @@ private function encoderLogo(string $chemin): ?string
                 abort(404);
             }
 
-            return Storage::disk('local')->response($memoire->apercu);
+            return Storage::disk('s3')->response($memoire->apercu);
         }
         public function statsPubliques()
 {
@@ -948,6 +963,6 @@ public function afficherConfirmationBinome(Request $request, string $token)
         abort(404);
     }
 
-    return Storage::disk('local')->response($chemin);
+    return Storage::disk('s3')->response($chemin);
 }
 }
