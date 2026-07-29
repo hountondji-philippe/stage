@@ -1,75 +1,454 @@
-﻿===== app\Http\Controllers\Api\AdminRechercheController.php =====
+
+===== app\Http\Controllers\Api\AuthController.php =====
+
 <?php
 
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Memoire;
+use App\Mail\ActivationCompteMail;
 use App\Models\EtudiantAutorise;
-use App\Models\Filiere;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use App\Mail\ReinitialisationMotDePasseMail;
+use Illuminate\Support\Facades\DB;
+use App\Mail\CodeAccesL2Mail;
+use App\Models\AccesL2;
 
-class AdminRechercheController extends Controller
+class AuthController extends Controller
 {
-    public function index(Request $request)
-    {
-        $terme = trim($request->input('q', ''));
+    /**
+     * Niveaux autorisés à créer un compte.
+     */
+    protected array $niveauxAutorises = ['L3', 'M1', 'M2'];
+    protected string $niveauLectureCode = 'L2';
 
-        if (mb_strlen($terme) < 2) {
-            return response()->json(['memoires' => [], 'etudiants' => [], 'filieres' => []]);
+    public function verifierMatricule(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'matricule' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Le matricule est obligatoire.',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $mots = array_filter(explode(' ', $terme));
+        $etudiantAutorise = EtudiantAutorise::where('matricule', $request->matricule)->first();
 
-        // Mémoires : cherche dans le titre OU le nom de la filière liée
-        $memoires = Memoire::where(function ($q) use ($mots) {
-                foreach ($mots as $mot) {
-                    $q->where(function ($sub) use ($mot) {
-                        $sub->where('titre', 'like', "%{$mot}%")
-                            ->orWhereHas('filiere', function ($f) use ($mot) {
-                                $f->where('nom', 'like', "%{$mot}%");
-                            });
-                    });
-                }
-            })
-            ->with('filiere:id,nom')
-            ->latest()
-            ->limit(5)
-            ->get(['id', 'titre', 'statut', 'filiere_id']);
+        if (!$etudiantAutorise) {
+            return response()->json([
+                'message' => 'Matricule non reconnu. Contactez l\'administration.',
+            ], 404);
+        }
 
-        // Étudiants : nom, prénom, matricule, email
-        $etudiants = EtudiantAutorise::where(function ($q) use ($mots) {
-                foreach ($mots as $mot) {
-                    $q->where(function ($sub) use ($mot) {
-                        $sub->where('nom', 'like', "%{$mot}%")
-                            ->orWhere('prenom', 'like', "%{$mot}%")
-                            ->orWhere('matricule', 'like', "%{$mot}%")
-                            ->orWhere('email', 'like', "%{$mot}%");
-                    });
-                }
-            })
-            ->limit(5)
-            ->get(['id', 'nom', 'prenom', 'matricule', 'compte_active']);
+        // Cas L1 : aucun accès, quel que soit le statut du compte
+        if ($etudiantAutorise->niveau === 'L1') {
+            return response()->json([
+                'message' => 'L\'accès à la plateforme n\'est pas encore ouvert aux étudiants de Licence 1.',
+            ], 403);
+        }
 
-        // Filières : nom
-        $filieres = Filiere::where(function ($q) use ($mots) {
-                foreach ($mots as $mot) {
-                    $q->where('nom', 'like', "%{$mot}%");
-                }
-            })
-            ->withCount('memoires')
-            ->limit(5)
-            ->get(['id', 'nom']);
+        // Cas L2 : code temporaire par email, aucun compte créé
+        if ($etudiantAutorise->niveau === $this->niveauLectureCode) {
+            $code = (string) random_int(100000, 999999);
+
+            $accesL2 = AccesL2::updateOrCreate(
+                ['etudiant_autorise_id' => $etudiantAutorise->id],
+                [
+                    'code' => Hash::make($code),
+                    'code_expire_le' => now()->addMinutes(15),
+                ]
+            );
+
+            Mail::to($etudiantAutorise->email)->queue(
+                new CodeAccesL2Mail($etudiantAutorise->prenom, $code)
+            );
+
+            return response()->json([
+                'message' => 'Un code d\'accès a été envoyé à l\'adresse enregistrée pour ce matricule.',
+                'type' => 'code_l2',
+            ]);
+        }
+
+        // Cas L3/M1/M2 : flux existant (lien d'activation)
+        if ($etudiantAutorise->compte_active) {
+            return response()->json([
+                'message' => 'Un compte existe déjà pour ce matricule. Connectez-vous ou réinitialisez votre mot de passe.',
+            ], 409);
+        }
+
+        if (!in_array($etudiantAutorise->niveau, $this->niveauxAutorises)) {
+            return response()->json([
+                'message' => 'La création de compte est réservée aux étudiants de Licence 3, Master 1 et Master 2.',
+            ], 403);
+        }
+
+        $etudiantAutorise->token_activation = Str::random(64);
+        $etudiantAutorise->token_expires_at = now()->addHours(48);
+        $etudiantAutorise->save();
+
+        Mail::to($etudiantAutorise->email)->queue(new ActivationCompteMail($etudiantAutorise));
 
         return response()->json([
-            'memoires' => $memoires,
-            'etudiants' => $etudiants,
-            'filieres' => $filieres,
+            'message' => 'Un email d\'activation a été envoyé à l\'adresse enregistrée pour ce matricule.',
+            'type' => 'lien_activation',
+        ]);
+    }
+
+    public function verifierCodeL2(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'matricule' => 'required|string',
+            'code' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Le matricule et le code sont obligatoires.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $etudiantAutorise = EtudiantAutorise::where('matricule', $request->matricule)->first();
+
+        if (!$etudiantAutorise || $etudiantAutorise->niveau !== $this->niveauLectureCode) {
+            return response()->json(['message' => 'Demande invalide.'], 404);
+        }
+
+        $accesL2 = AccesL2::where('etudiant_autorise_id', $etudiantAutorise->id)->first();
+
+        if (!$accesL2 || !$accesL2->code) {
+            return response()->json(['message' => 'Aucun code en attente pour ce matricule.'], 404);
+        }
+
+        if (now()->isAfter($accesL2->code_expire_le)) {
+            return response()->json(['message' => 'Ce code a expiré. Demandez-en un nouveau.'], 410);
+        }
+
+        if (!Hash::check($request->code, $accesL2->code)) {
+            return response()->json(['message' => 'Code incorrect.'], 422);
+        }
+
+        // Code à usage unique : on l'invalide immédiatement après vérification
+        $accesL2->update(['code' => null, 'code_expire_le' => null]);
+
+        $token = $accesL2->createToken('acces_l2', ['lecture-seule'], now()->addHours(24))->plainTextToken;
+
+        return response()->json([
+            'message' => 'Accès en lecture activé pour 24 heures.',
+            'token' => $token,
+        ]);
+    }
+
+    public function activerCompte(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Données invalides.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $etudiantAutorise = EtudiantAutorise::where('token_activation', $request->token)->first();
+
+        if (!$etudiantAutorise) {
+            return response()->json([
+                'message' => 'Lien d\'activation invalide.',
+            ], 404);
+        }
+
+        if ($etudiantAutorise->compte_active) {
+            return response()->json([
+                'message' => 'Ce compte est déjà activé.',
+            ], 409);
+        }
+
+        if (now()->isAfter($etudiantAutorise->token_expires_at)) {
+            return response()->json([
+                'message' => 'Ce lien d\'activation a expiré. Demandez un nouveau lien.',
+            ], 410);
+        }
+
+        // Sécurité supplémentaire : même si le token est valide,
+        // on revérifie le niveau au cas où il aurait changé entre-temps.
+        if (!in_array($etudiantAutorise->niveau, $this->niveauxAutorises)) {
+            return response()->json([
+                'message' => 'La création de compte est réservée aux étudiants de Licence 3, Master 1 et Master 2.',
+            ], 403);
+        }
+
+        $user = User::create([
+            'email' => $etudiantAutorise->email,
+            'password' => Hash::make($request->password),
+            'role' => 'etudiant',
+            'etudiant_autorise_id' => $etudiantAutorise->id,
+        ]);
+
+        $etudiantAutorise->compte_active = true;
+        $etudiantAutorise->token_activation = null;
+        $etudiantAutorise->token_expires_at = null;
+        $etudiantAutorise->save();
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Compte activé avec succès.',
+            'token' => $token,
+            'user' => $user,
+        ], 201);
+    }
+
+    public function renvoyerLien(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'matricule' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Le matricule est obligatoire.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $etudiantAutorise = EtudiantAutorise::where('matricule', $request->matricule)->first();
+
+        if (!$etudiantAutorise) {
+            return response()->json([
+                'message' => 'Matricule non reconnu. Contactez l\'administration.',
+            ], 404);
+        }
+
+        if ($etudiantAutorise->compte_active) {
+            return response()->json([
+                'message' => 'Un compte existe déjà pour ce matricule. Connectez-vous.',
+            ], 409);
+        }
+
+        if (!in_array($etudiantAutorise->niveau, $this->niveauxAutorises)) {
+            return response()->json([
+                'message' => 'La création de compte est réservée aux étudiants de Licence 3, Master 1 et Master 2.',
+            ], 403);
+        }
+
+        $etudiantAutorise->token_activation = Str::random(64);
+        $etudiantAutorise->token_expires_at = now()->addHours(48);
+        $etudiantAutorise->save();
+
+        Mail::to($etudiantAutorise->email)->queue(new ActivationCompteMail($etudiantAutorise));
+
+        return response()->json([
+            'message' => 'Un nouveau lien d\'activation a été envoyé.',
+        ]);
+    }
+
+    public function login(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Données invalides.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Identifiants incorrects.',
+            ], 401);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Connexion réussie.',
+            'token' => $token,
+            'user' => $user,
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Déconnexion réussie.',
+        ]);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json([
+            'user' => $request->user()->load('etudiantAutorise.filiere'),
+        ]);
+    }
+
+    public function changerMotDePasse(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'mot_de_passe_actuel' => 'required|string',
+            'mot_de_passe' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Données invalides.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        if (!Hash::check($request->mot_de_passe_actuel, $user->password)) {
+            return response()->json([
+                'message' => 'Le mot de passe actuel est incorrect.',
+            ], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->mot_de_passe),
+        ]);
+
+        return response()->json([
+            'message' => 'Mot de passe mis à jour avec succès.',
+        ]);
+    }
+
+    public function demanderReinitialisation(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Email invalide.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if ($user) {
+            $token = Str::random(64);
+
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $request->email],
+                ['token' => Hash::make($token), 'created_at' => now()]
+            );
+
+            Mail::to($request->email)->queue(new ReinitialisationMotDePasseMail($token, $request->email));
+        }
+
+        return response()->json([
+            'message' => 'Si cet email existe, un lien de reinitialisation a ete envoye.',
+        ]);
+    }
+
+    public function reinitialiserMotDePasse(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Donnees invalides.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $enregistrement = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->first();
+
+        if (!$enregistrement || !Hash::check($request->token, $enregistrement->token)) {
+            return response()->json([
+                'message' => 'Ce lien de reinitialisation est invalide.',
+            ], 404);
+        }
+
+        if (now()->diffInMinutes($enregistrement->created_at) > 60) {
+            return response()->json([
+                'message' => 'Ce lien de reinitialisation a expire.',
+            ], 410);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Utilisateur introuvable.',
+            ], 404);
+        }
+
+        $user->update(['password' => $request->password]);
+
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json([
+            'message' => 'Mot de passe reinitialise avec succes.',
         ]);
     }
 }
 
+===== app\Models\AccesL2.php =====
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Sanctum\HasApiTokens;
+
+class AccesL2 extends Model
+{
+    use HasApiTokens;
+
+    protected $table = 'acces_l2';
+
+    protected $fillable = [
+        'etudiant_autorise_id',
+        'code',
+        'code_expire_le',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'code_expire_le' => 'datetime',
+        ];
+    }
+
+    public function etudiantAutorise(): BelongsTo
+    {
+        return $this->belongsTo(EtudiantAutorise::class);
+    }
+}
+
 ===== app\Http\Controllers\Api\MemoireController.php =====
+
 <?php
 
 namespace App\Http\Controllers\Api;
@@ -83,6 +462,10 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Process;
 use App\Models\EtudiantAutorise;
 use App\Models\Filiere;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\PeriodeDepot;
+use Illuminate\Support\Facades\URL;
+
 class MemoireController extends Controller
 {
     public function rechercherPublic(Request $request)
@@ -157,31 +540,63 @@ $memoires = $query->paginate(12);
             abort(404);
         }
 
-        return Storage::disk('local')->response($memoire->fichier_memoire);
+        return Storage::disk('s3')->response($memoire->fichier_memoire);
+    }
+     
+    public function lienFichierPublic(Memoire $memoire)
+    {
+        if (!$memoire->estValide()) {
+            abort(404);
+        }
+
+        $url = URL::temporarySignedRoute(
+            'memoires.fichier.signe',
+            now()->addMinutes(5),
+            ['memoire' => $memoire->id]
+        );
+
+        return response()->json(['url' => $url]);
     }
 
+    public function fichierSigne(Memoire $memoire)
+    {
+        if (!$memoire->estValide()) {
+            abort(404);
+        }
+
+        return Storage::disk('s3')->response($memoire->fichier_memoire);
+    }
     public function telechargerPublic(Memoire $memoire)
     {
         if (!$memoire->estValide()) {
             abort(404);
         }
 
-        return Storage::disk('local')->download(
+        return Storage::disk('s3')->download(
             $memoire->fichier_memoire,
             Str::slug($memoire->titre) . '.pdf'
         );
     }
 
     public function mesMemoires(Request $request)
-    {
-        $memoires = $request->user()->memoires()->with(['filiere', 'sousFiliere'])->latest()->get();
-
-        return response()->json(['memoires' => $memoires]);
-    }
-
-    public function monFichier(Request $request, Memoire $memoire, string $type)
 {
-    if ($memoire->user_id !== $request->user()->id) {
+    $matricule = $request->user()->etudiantAutorise?->matricule;
+
+    $memoires = Memoire::with(['filiere', 'sousFiliere'])
+        ->where(function ($q) use ($request, $matricule) {
+            $q->where('user_id', $request->user()->id);
+            if ($matricule) {
+                $q->orWhere('matricule_binome', $matricule);
+            }
+        })
+        ->latest()
+        ->get();
+
+    return response()->json(['memoires' => $memoires]);
+}
+ public function monFichier(Request $request, Memoire $memoire, string $type)
+{
+    if (!$this->peutAccederAuFichier($request, $memoire)) {
         return response()->json(['message' => 'Action non autorisée.'], 403);
     }
 
@@ -189,15 +604,27 @@ $memoires = $query->paginate(12);
         abort(404);
     }
 
+    if ($type === 'preuve' && !$memoire->estValide()) {
+        return response()->json([
+            'message' => 'La fiche de dépôt sera disponible dès que votre mémoire aura été validé par la scolarité.',
+        ], 403);
+    }
+
     $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
 
-    return Storage::disk('local')->response($chemin);
+    return Storage::disk('s3')->response($chemin);
 }
 
-  public function monTelechargement(Request $request, Memoire $memoire, string $type)
+public function monTelechargement(Request $request, Memoire $memoire, string $type)
 {
-    if ($memoire->user_id !== $request->user()->id) {
+    if (!$this->peutAccederAuFichier($request, $memoire)) {
         abort(403);
+    }
+
+    if ($type === 'preuve' && !$memoire->estValide()) {
+        return response()->json([
+            'message' => 'La fiche de dépôt sera disponible dès que votre mémoire aura été validé par la scolarité.',
+        ], 403);
     }
 
     $chemin = match ($type) {
@@ -210,84 +637,26 @@ $memoires = $query->paginate(12);
         abort(404);
     }
 
-    return Storage::disk('local')->download(
+    return Storage::disk('s3')->download(
         $chemin,
         Str::slug($memoire->titre) . '-' . $type . '.pdf'
     );
 }
 
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'titre' => 'required|string|max:255',
-            'resume' => 'required|string',
-            'filiere_id' => 'required|exists:filieres,id',
-            'sous_filiere_id' => 'nullable|exists:sous_filieres,id',
-            'annee' => 'required|string|max:4',
-            'encadrant' => 'required|string|max:255',
-            'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
-            'fichier_preuve' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'cycle' => 'required|in:licence,master',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Données invalides.',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
-        $cheminApercu = null;
-            try {
-                $cheminPdf = Storage::disk('local')->path($cheminMemoire);
-                $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
-                Storage::disk('local')->makeDirectory('apercus');
-                $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
-
-                $resultat = Process::run([
-                    config('app.ghostscript_path'),
-                    '-dNOPAUSE',
-                    '-dBATCH',
-                    '-sDEVICE=jpeg',
-                    '-r100',
-                    '-dFirstPage=1',
-                    '-dLastPage=1',
-                    '-sOutputFile=' . $cheminApercuComplet,
-                    $cheminPdf,
-                ]);
-
-                if ($resultat->successful() && file_exists($cheminApercuComplet)) {
-                    $cheminApercu = $nomApercu;
-                }
-            } catch (\Exception $e) {
-                $cheminApercu = null;
-            }
-        $cheminPreuve = $request->file('fichier_preuve')->store('preuves', 'local');
-
-        $memoire = Memoire::create([
-            'user_id' => $request->user()->id,
-            'titre' => $request->titre,
-            'resume' => $request->resume,
-            'filiere_id' => $request->filiere_id,
-            'sous_filiere_id' => $request->sous_filiere_id,
-            'annee' => $request->annee,
-            'encadrant' => $request->encadrant,
-            'fichier_memoire' => $cheminMemoire,
-            'fichier_preuve' => $cheminPreuve,
-            'statut' => 'en_attente',
-            'apercu' => $cheminApercu,
-            'cycle' => $request->cycle,
-        ]);
-
-        return response()->json([
-            'message' => 'Mémoire déposé avec succès. Il sera examiné par l\'administration.',
-            'memoire' => $memoire,
-        ], 201);
+private function peutAccederAuFichier(Request $request, Memoire $memoire): bool
+{
+    if ($memoire->user_id === $request->user()->id) {
+        return true;
     }
 
+    $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
 
-    public function storeAdmin(Request $request)
+    return $memoire->binome_confirme
+        && $matriculeConnecte
+        && $matriculeConnecte === $memoire->matricule_binome;
+}
+
+public function store(Request $request)
 {
     $validator = Validator::make($request->all(), [
         'titre' => 'required|string|max:255',
@@ -297,8 +666,9 @@ $memoires = $query->paginate(12);
         'annee' => 'required|string|max:4',
         'encadrant' => 'required|string|max:255',
         'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
-        'fichier_preuve' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         'cycle' => 'required|in:licence,master',
+        'mode_depot' => 'required|in:unique,binome',
+        'matricule_binome' => 'required_if:mode_depot,binome|nullable|string|exists:etudiants_autorises,matricule',
     ]);
 
     if ($validator->fails()) {
@@ -308,30 +678,90 @@ $memoires = $query->paginate(12);
         ], 422);
     }
 
-    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 'local');
-    $cheminApercu = null;
-    try {
-        $cheminPdf = Storage::disk('local')->path($cheminMemoire);
-        $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
-        Storage::disk('local')->makeDirectory('apercus');
-        $cheminApercuComplet = Storage::disk('local')->path($nomApercu);
-
-        $resultat = Process::run([
-            config('app.ghostscript_path'),
-            '-dNOPAUSE', '-dBATCH', '-sDEVICE=jpeg', '-r100',
-            '-dFirstPage=1', '-dLastPage=1',
-            '-sOutputFile=' . $cheminApercuComplet,
-            $cheminPdf,
-        ]);
-
-        if ($resultat->successful() && file_exists($cheminApercuComplet)) {
-            $cheminApercu = $nomApercu;
-        }
-    } catch (\Exception $e) {
-        $cheminApercu = null;
+    if (!PeriodeDepot::estOuvertePour($request->cycle)) {
+        return response()->json([
+            'message' => 'La période de dépôt pour le cycle ' . $request->cycle . ' est actuellement fermée.',
+        ], 403);
     }
 
-    $cheminPreuve = $request->file('fichier_preuve')->store('preuves', 'local');
+    $etudiant1 = $request->user()->etudiantAutorise;
+    $niveauActuel = $etudiant1?->niveau;
+
+    if (!$niveauActuel) {
+        return response()->json([
+            'message' => 'Votre niveau n\'est pas renseigné. Contactez l\'administration.',
+        ], 422);
+    }
+     if (!$etudiant1->annee_validee) {
+        return response()->json([
+            'message' => 'Votre année n\'est pas encore validée par la scolarité. Le dépôt vous sera ouvert dès que votre statut sera mis à jour.',
+        ], 403);
+    }
+
+    $depotExistant = $request->user()->memoires()->where('niveau', $niveauActuel)->exists();
+
+    if ($depotExistant) {
+        return response()->json([
+            'message' => "Vous avez déjà un dépôt pour votre niveau actuel ({$niveauActuel}). En cas de rejet, corrigez et renvoyez ce dépôt plutôt que d'en créer un nouveau.",
+        ], 409);
+    }
+
+    $nomBinome = null;
+    $prenomBinome = null;
+
+    if ($request->mode_depot === 'binome') {
+        if ($request->matricule_binome === ($etudiant1->matricule ?? null)) {
+            return response()->json([
+                'message' => 'Le matricule du binôme ne peut pas être le vôtre.',
+            ], 422);
+        }
+
+        $etudiantBinome = EtudiantAutorise::where('matricule', $request->matricule_binome)->first();
+
+        if (!$etudiantBinome || !$etudiantBinome->compte_active) {
+            return response()->json([
+                'message' => 'Ce matricule ne correspond à aucun étudiant autorisé actif.',
+            ], 422);
+        }
+
+        $nomBinome = $etudiantBinome->nom;
+        $prenomBinome = $etudiantBinome->prenom;
+    }
+
+    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 's3');
+$cheminApercu = null;
+try {
+    $cheminTempSource = storage_path('app/temp/' . Str::random(40) . '.pdf');
+    $cheminTempApercu = storage_path('app/temp/' . Str::random(40) . '.jpg');
+
+    if (!is_dir(dirname($cheminTempSource))) {
+        mkdir(dirname($cheminTempSource), 0755, true);
+    }
+
+    file_put_contents($cheminTempSource, Storage::disk('s3')->get($cheminMemoire));
+
+    $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
+    $resultat = Process::run([
+        config('app.ghostscript_path'),
+        '-dNOPAUSE', '-dBATCH', '-sDEVICE=jpeg', '-r100',
+        '-dFirstPage=1', '-dLastPage=1',
+        '-sOutputFile=' . $cheminTempApercu,
+        $cheminTempSource,
+    ]);
+
+    if ($resultat->successful() && file_exists($cheminTempApercu)) {
+        Storage::disk('s3')->put($nomApercu, file_get_contents($cheminTempApercu));
+        $cheminApercu = $nomApercu;
+    }
+
+    unlink($cheminTempSource);
+    if (file_exists($cheminTempApercu)) {
+        unlink($cheminTempApercu);
+    }
+} catch (\Throwable $e) {
+    }
+
+    $estBinome = $request->mode_depot === 'binome';
 
     $memoire = Memoire::create([
         'user_id' => $request->user()->id,
@@ -340,22 +770,40 @@ $memoires = $query->paginate(12);
         'filiere_id' => $request->filiere_id,
         'sous_filiere_id' => $request->sous_filiere_id,
         'annee' => $request->annee,
+        'niveau' => $niveauActuel,
         'encadrant' => $request->encadrant,
         'fichier_memoire' => $cheminMemoire,
-        'fichier_preuve' => $cheminPreuve,
-        'statut' => 'valide',
+        'statut' => $estBinome ? 'en_attente_binome' : 'en_attente',
         'apercu' => $cheminApercu,
         'cycle' => $request->cycle,
-        'valide_par' => $request->user()->id,
-        'valide_le' => now(),
+        'mode_depot' => $request->mode_depot,
+        'matricule_binome' => $estBinome ? $request->matricule_binome : null,
+        'nom_binome' => $nomBinome,
+        'prenom_binome' => $prenomBinome,
+        'binome_confirme' => !$estBinome,
+        'binome_token' => $estBinome ? Str::random(48) : null,
     ]);
 
+    $cheminFiche = $this->genererFicheDepot($memoire, $etudiant1);
+    $memoire->update(['fichier_preuve' => $cheminFiche]);
+
+    if ($estBinome) {
+        $emailBinome = EtudiantAutorise::where('matricule', $request->matricule_binome)->value('email');
+        if ($emailBinome) {
+            \Illuminate\Support\Facades\Mail::to($emailBinome)->send(new \App\Mail\ConfirmationBinomeMail($memoire));
+        }
+
+        return response()->json([
+            'message' => 'Dépôt enregistré. En attente de confirmation de votre binôme.',
+            'memoire' => $memoire,
+        ], 201);
+    }
+
     return response()->json([
-        'message' => 'Mémoire ajouté et publié avec succès.',
+        'message' => 'Mémoire déposé avec succès. Il sera examiné par l\'administration.',
         'memoire' => $memoire,
     ], 201);
 }
-
 
 public function update(Request $request, Memoire $memoire)
 {
@@ -363,10 +811,16 @@ public function update(Request $request, Memoire $memoire)
         return response()->json(['message' => 'Action non autorisée.'], 403);
     }
 
-    if ($memoire->estValide()) {
+    if (!$memoire->estEnAttente() && !$memoire->estRejete()) {
         return response()->json([
-            'message' => 'Un mémoire déjà validé ne peut plus être modifié.',
+            'message' => 'Seul un mémoire en attente ou rejeté peut être modifié.',
         ], 409);
+    }
+
+    if ($memoire->estRejete() && !PeriodeDepot::estOuvertePour($memoire->cycle)) {
+        return response()->json([
+            'message' => 'La période de dépôt est fermée, vous ne pouvez pas renvoyer ce mémoire pour le moment.',
+        ], 403);
     }
 
     $validator = Validator::make($request->all(), [
@@ -378,7 +832,8 @@ public function update(Request $request, Memoire $memoire)
         'cycle' => 'sometimes|in:licence,master',
         'encadrant' => 'sometimes|string|max:255',
         'fichier_memoire' => 'sometimes|file|mimes:pdf|max:10240',
-        'fichier_preuve' => 'sometimes|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'mode_depot' => 'sometimes|in:unique,binome',
+        'matricule_binome' => 'required_if:mode_depot,binome|nullable|string|exists:etudiants_autorises,matricule',
     ]);
 
     if ($validator->fails()) {
@@ -389,33 +844,295 @@ public function update(Request $request, Memoire $memoire)
     }
 
     $donnees = $request->only(['titre', 'resume', 'filiere_id', 'sous_filiere_id', 'annee', 'cycle', 'encadrant']);
+    $regenererFiche = $request->hasFile('fichier_memoire')
+        || $request->filled('titre')
+        || $request->filled('encadrant')
+        || $request->filled('cycle')
+        || $request->filled('filiere_id')
+        || $request->filled('mode_depot');
 
     if ($request->hasFile('fichier_memoire')) {
-        Storage::disk('local')->delete($memoire->fichier_memoire);
-        $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 'local');
+        Storage::disk('s3')->delete($memoire->fichier_memoire);
+        $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 's3');
     }
 
-    if ($request->hasFile('fichier_preuve')) {
-        Storage::disk('local')->delete($memoire->fichier_preuve);
-        $donnees['fichier_preuve'] = $request->file('fichier_preuve')->store('preuves', 'local');
-    }
+    $etaitRejete = $memoire->estRejete();
+    $nouveauModeDepot = $request->input('mode_depot', $memoire->mode_depot);
+    $nouveauMatriculeBinome = $request->input('matricule_binome', $memoire->matricule_binome);
+    $emailBinomeAPrevenir = null;
 
-    // Si le mémoire était rejeté, la correction le renvoie en attente de validation
-    if ($memoire->statut === 'rejete') {
-        $donnees['statut'] = 'en_attente';
+    if ($etaitRejete) {
         $donnees['motif_rejet'] = null;
         $donnees['valide_par'] = null;
         $donnees['valide_le'] = null;
+
+        if ($nouveauModeDepot === 'binome') {
+            if ($nouveauMatriculeBinome === $request->user()->etudiantAutorise?->matricule) {
+                return response()->json([
+                    'message' => 'Le matricule du binôme ne peut pas être le vôtre.',
+                ], 422);
+            }
+
+            $etudiantBinome = EtudiantAutorise::where('matricule', $nouveauMatriculeBinome)->first();
+
+            if (!$etudiantBinome || !$etudiantBinome->compte_active) {
+                return response()->json([
+                    'message' => 'Ce matricule ne correspond à aucun étudiant autorisé actif.',
+                ], 422);
+            }
+
+            $donnees['mode_depot'] = 'binome';
+            $donnees['matricule_binome'] = $nouveauMatriculeBinome;
+            $donnees['nom_binome'] = $etudiantBinome->nom;
+            $donnees['prenom_binome'] = $etudiantBinome->prenom;
+            $donnees['statut'] = 'en_attente_binome';
+            $donnees['binome_confirme'] = false;
+            $donnees['binome_token'] = Str::random(48);
+            $emailBinomeAPrevenir = $etudiantBinome->email;
+        } else {
+            $donnees['mode_depot'] = 'unique';
+            $donnees['matricule_binome'] = null;
+            $donnees['nom_binome'] = null;
+            $donnees['prenom_binome'] = null;
+            $donnees['statut'] = 'en_attente';
+            $donnees['binome_confirme'] = true;
+            $donnees['binome_token'] = null;
+        }
     }
 
     $memoire->update($donnees);
 
+    if ($regenererFiche) {
+        $etudiant1 = $request->user()->etudiantAutorise;
+        if ($memoire->fichier_preuve) {
+            Storage::disk('s3')->delete($memoire->fichier_preuve);
+        }
+        $cheminFiche = $this->genererFicheDepot($memoire, $etudiant1);
+        $memoire->update(['fichier_preuve' => $cheminFiche]);
+    }
+
+    if ($emailBinomeAPrevenir) {
+        \Illuminate\Support\Facades\Mail::to($emailBinomeAPrevenir)
+            ->send(new \App\Mail\ConfirmationBinomeMail($memoire));
+    }
+
+    $message = match (true) {
+        $etaitRejete && $memoire->estEnAttenteBinome() => 'Mémoire corrigé. En attente de confirmation de votre binôme.',
+        $etaitRejete => 'Mémoire corrigé et renvoyé pour validation.',
+        default => 'Mémoire mis à jour avec succès.',
+    };
+
     return response()->json([
-        'message' => $memoire->statut === 'en_attente' && $memoire->wasChanged('statut')
-            ? 'Mémoire corrigé et renvoyé pour validation.'
-            : 'Mémoire mis à jour avec succès.',
+        'message' => $message,
         'memoire' => $memoire,
     ]);
+}
+
+private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant1): string
+{
+    $nomFichier = 'fiches/' . Str::random(40) . '.pdf';
+    $cheminTemp = storage_path('app/temp/' . Str::random(40) . '.pdf');
+
+    if (!is_dir(dirname($cheminTemp))) {
+        mkdir(dirname($cheminTemp), 0755, true);
+    }
+
+    $etudiant1?->load('filiere');
+    $etudiant2 = null;
+    if ($memoire->estBinome() && $memoire->matricule_binome) {
+        $etudiant2 = EtudiantAutorise::with('filiere')
+            ->where('matricule', $memoire->matricule_binome)
+            ->first();
+    }
+    $logoUac = $this->encoderLogo(public_path('images/logo-uac.png'));
+    $logoEneam = $this->encoderLogo(public_path('images/logo-memoires-plus.png'));
+    $qrCode = $this->genererQrVerification($memoire);
+
+    Pdf::loadView('pdf.fiche-depot', [
+        'memoire' => $memoire,
+        'etudiant1' => $etudiant1,
+        'etudiant2' => $etudiant2,
+        'logoUac' => $logoUac,
+        'logoEneam' => $logoEneam,
+        'qrCode' => $qrCode,
+    ])->save($cheminTemp);
+
+    Storage::disk('s3')->put($nomFichier, file_get_contents($cheminTemp));
+    unlink($cheminTemp);
+
+    return $nomFichier;
+}
+
+private function genererQrVerification(Memoire $memoire): string
+{
+    $url = \Illuminate\Support\Facades\URL::signedRoute('memoire.verification', ['memoire' => $memoire->id]);
+
+    $svg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(200)
+        ->margin(1)
+        ->generate($url);
+
+    return 'data:image/svg+xml;base64,' . base64_encode($svg);
+}
+
+
+public function verifierFiche(Memoire $memoire)
+{
+    if (!$memoire->estValide()) {
+        abort(404);
+    }
+
+    $memoire->loadMissing(['user.etudiantAutorise', 'filiere']);
+
+    $etudiant1 = $memoire->user->etudiantAutorise;
+    $etudiant2 = null;
+    if ($memoire->estBinome() && $memoire->matricule_binome) {
+        $etudiant2 = EtudiantAutorise::where('matricule', $memoire->matricule_binome)->first();
+    }
+
+    return view('verification.memoire', [
+        'memoire' => $memoire,
+        'etudiant1' => $etudiant1,
+        'etudiant2' => $etudiant2,
+    ]);
+}
+
+public function telechargerVerification(Memoire $memoire)
+{
+    if (!$memoire->estValide()) {
+        abort(404);
+    }
+
+    return Storage::disk('s3')->response($memoire->fichier_memoire);
+}
+
+private function encoderLogo(string $chemin): ?string
+{
+    if (!file_exists($chemin)) {
+        return null;
+    }
+
+    $type = pathinfo($chemin, PATHINFO_EXTENSION);
+    $data = file_get_contents($chemin);
+
+    return 'data:image/' . $type . ';base64,' . base64_encode($data);
+}
+
+
+   public function storeAdmin(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'titre' => 'required|string|max:255',
+        'resume' => 'required|string',
+        'filiere_id' => 'required|exists:filieres,id',
+        'sous_filiere_id' => 'nullable|exists:sous_filieres,id',
+        'annee' => 'required|string|max:4',
+        'encadrant' => 'required|string|max:255',
+        'fichier_memoire' => 'required|file|mimes:pdf|max:10240',
+        'cycle' => 'required|in:licence,master',
+        'etudiant_autorise_id' => 'required|exists:etudiants_autorises,id',
+        'mode_depot' => 'required|in:unique,binome',
+        'matricule_binome' => 'required_if:mode_depot,binome|nullable|string|exists:etudiants_autorises,matricule',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Données invalides.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $etudiantAuteur = EtudiantAutorise::find($request->etudiant_autorise_id);
+
+    if (!$etudiantAuteur || !$etudiantAuteur->user_id) {
+        return response()->json([
+            'message' => "L'étudiant sélectionné n'a pas de compte utilisateur associé.",
+        ], 422);
+    }
+
+    $nomBinome = null;
+    $prenomBinome = null;
+
+    if ($request->mode_depot === 'binome') {
+        if ($request->matricule_binome === $etudiantAuteur->matricule) {
+            return response()->json([
+                'message' => "L'auteur principal et le binôme ne peuvent pas être la même personne.",
+            ], 422);
+        }
+
+        $etudiantBinome = EtudiantAutorise::where('matricule', $request->matricule_binome)->first();
+
+        if (!$etudiantBinome || !$etudiantBinome->compte_active) {
+            return response()->json([
+                'message' => 'Ce matricule ne correspond à aucun étudiant autorisé actif.',
+            ], 422);
+        }
+
+        $nomBinome = $etudiantBinome->nom;
+        $prenomBinome = $etudiantBinome->prenom;
+    }
+
+    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 's3');
+    $cheminApercu = null;
+    try {
+        $cheminTempSource = storage_path('app/temp/' . Str::random(40) . '.pdf');
+        $cheminTempApercu = storage_path('app/temp/' . Str::random(40) . '.jpg');
+
+        if (!is_dir(dirname($cheminTempSource))) {
+            mkdir(dirname($cheminTempSource), 0755, true);
+        }
+
+        file_put_contents($cheminTempSource, Storage::disk('s3')->get($cheminMemoire));
+
+        $nomApercu = 'apercus/' . Str::random(40) . '.jpg';
+
+        $resultat = Process::run([
+            config('app.ghostscript_path'),
+            '-dNOPAUSE', '-dBATCH', '-sDEVICE=jpeg', '-r100',
+            '-dFirstPage=1', '-dLastPage=1',
+            '-sOutputFile=' . $cheminTempApercu,
+            $cheminTempSource,
+        ]);
+
+        if ($resultat->successful() && file_exists($cheminTempApercu)) {
+            Storage::disk('s3')->put($nomApercu, file_get_contents($cheminTempApercu));
+            $cheminApercu = $nomApercu;
+        }
+
+        unlink($cheminTempSource);
+        if (file_exists($cheminTempApercu)) {
+            unlink($cheminTempApercu);
+        }
+    } catch (\Exception $e) {
+        $cheminApercu = null;
+    }
+
+    $memoire = Memoire::create([
+        'user_id' => $etudiantAuteur->user_id,
+        'titre' => $request->titre,
+        'resume' => $request->resume,
+        'filiere_id' => $request->filiere_id,
+        'sous_filiere_id' => $request->sous_filiere_id,
+        'annee' => $request->annee,
+        'encadrant' => $request->encadrant,
+        'fichier_memoire' => $cheminMemoire,
+        'statut' => 'valide',
+        'apercu' => $cheminApercu,
+        'cycle' => $request->cycle,
+        'mode_depot' => $request->mode_depot,
+        'matricule_binome' => $request->mode_depot === 'binome' ? $request->matricule_binome : null,
+        'nom_binome' => $nomBinome,
+        'prenom_binome' => $prenomBinome,
+        'valide_par' => $request->user()->id,
+        'valide_le' => now(),
+    ]);
+
+    $cheminFiche = $this->genererFicheDepot($memoire, $etudiantAuteur);
+    $memoire->update(['fichier_preuve' => $cheminFiche]);
+
+    return response()->json([
+        'message' => 'Mémoire ajouté et publié avec succès.',
+        'memoire' => $memoire,
+    ], 201);
 }
 
     public function destroy(Request $request, Memoire $memoire)
@@ -430,7 +1147,7 @@ public function update(Request $request, Memoire $memoire)
             ], 409);
         }
 
-        Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
+        Storage::disk('s3')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
         $memoire->delete();
 
         return response()->json([
@@ -453,7 +1170,7 @@ public function update(Request $request, Memoire $memoire)
 
         $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
 
-        return Storage::disk('local')->response($chemin);
+        return Storage::disk('s3')->response($chemin);
     }
 
     public function valider(Request $request, Memoire $memoire)
@@ -470,9 +1187,45 @@ public function update(Request $request, Memoire $memoire)
             'valide_le' => now(),
         ]);
 
+        $this->envoyerFicheDepot($memoire);
+
         return response()->json([
             'message' => 'Mémoire validé et publié.',
             'memoire' => $memoire,
+        ]);
+    }
+
+    private function envoyerFicheDepot(Memoire $memoire): void
+    {
+        $memoire->loadMissing('user.etudiantAutorise');
+        $etudiant1 = $memoire->user->etudiantAutorise;
+
+        \Illuminate\Support\Facades\Mail::to($memoire->user->email)
+            ->send(new \App\Mail\FicheDepotMail($memoire, $etudiant1->prenom ?? ''));
+
+        if ($memoire->estBinome() && $memoire->matricule_binome) {
+            $etudiantBinome = EtudiantAutorise::where('matricule', $memoire->matricule_binome)->first();
+
+            if ($etudiantBinome && $etudiantBinome->email) {
+                \Illuminate\Support\Facades\Mail::to($etudiantBinome->email)
+                    ->send(new \App\Mail\FicheDepotMail($memoire, $etudiantBinome->prenom ?? ''));
+            }
+        }
+    }
+
+    
+    public function renvoyerFiche(Memoire $memoire)
+    {
+        if (!$memoire->estValide()) {
+            return response()->json([
+                'message' => 'La fiche ne peut être renvoyée qu\'une fois le mémoire validé.',
+            ], 409);
+        }
+
+        $this->envoyerFicheDepot($memoire);
+
+        return response()->json([
+            'message' => 'La fiche de dépôt a été renvoyée par email.',
         ]);
     }
 
@@ -536,19 +1289,25 @@ public function update(Request $request, Memoire $memoire)
     }
 
     public function tousAdmin(Request $request)
-    {
-        $query = Memoire::with(['filiere', 'sousFiliere', 'user.etudiantAutorise']);
+{
+    $query = Memoire::with(['filiere', 'sousFiliere', 'user.etudiantAutorise']);
 
-        if ($request->filled('statut')) {
-            $query->where('statut', $request->statut);
-        }
-
-        $memoires = $query->latest()->paginate(15);
-
-        return response()->json($memoires);
+    if ($request->filled('statut')) {
+        $query->where('statut', $request->statut);
     }
 
+    if ($request->filled('filiere_id')) {
+        $query->where('filiere_id', $request->filiere_id);
+    }
 
+    if ($request->filled('sous_filiere_id')) {
+        $query->where('sous_filiere_id', $request->sous_filiere_id);
+    }
+
+    $memoires = $query->latest()->paginate(15);
+
+    return response()->json($memoires);
+}
      public function showAdmin(Memoire $memoire)
 {
     return response()->json([
@@ -557,7 +1316,7 @@ public function update(Request $request, Memoire $memoire)
 }
     public function supprimerAdmin(Memoire $memoire)
     {
-        Storage::disk('local')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
+        Storage::disk('s3')->delete([$memoire->fichier_memoire, $memoire->fichier_preuve]);
         $memoire->delete();
 
         return response()->json([
@@ -570,7 +1329,7 @@ public function update(Request $request, Memoire $memoire)
                 abort(404);
             }
 
-            return Storage::disk('local')->response($memoire->apercu);
+            return Storage::disk('s3')->response($memoire->apercu);
         }
         public function statsPubliques()
 {
@@ -580,265 +1339,196 @@ public function update(Request $request, Memoire $memoire)
         'etudiants_inscrits' => EtudiantAutorise::where('compte_active', true)->count(),
     ]);
 }
+public function show(Request $request, Memoire $memoire)
+{
+    if (!$this->peutAccederAuFichier($request, $memoire)) {
+        return response()->json(['message' => 'Accès non autorisé.'], 403);
+    }
+
+    return response()->json([
+        'memoire' => $memoire->load(['filiere', 'sousFiliere']),
+    ]);
+}
+public function afficherConfirmationBinome(Request $request, string $token)
+    {
+        $memoire = Memoire::where('binome_token', $token)->firstOrFail();
+
+        $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
+
+        if (!$matriculeConnecte || $matriculeConnecte !== $memoire->matricule_binome) {
+            return response()->json(['message' => 'Cette demande de confirmation ne vous concerne pas.'], 403);
+        }
+
+        if (!$memoire->estEnAttenteBinome()) {
+            return response()->json(['message' => 'Cette demande a déjà été traitée.'], 409);
+        }
+
+        return response()->json([
+            'memoire' => $memoire->load(['filiere', 'sousFiliere', 'user.etudiantAutorise']),
+        ]);
+    }
+
+    public function confirmerBinome(Request $request, string $token)
+    {
+        $memoire = Memoire::where('binome_token', $token)->firstOrFail();
+
+        $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
+
+        if (!$matriculeConnecte || $matriculeConnecte !== $memoire->matricule_binome) {
+            return response()->json(['message' => 'Cette demande de confirmation ne vous concerne pas.'], 403);
+        }
+
+        if (!$memoire->estEnAttenteBinome()) {
+            return response()->json(['message' => 'Cette demande a déjà été traitée.'], 409);
+        }
+
+        $memoire->update([
+            'statut' => 'en_attente',
+            'binome_confirme' => true,
+            'binome_confirme_le' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Dépôt confirmé. Il est désormais transmis à la scolarité.',
+            'memoire' => $memoire,
+        ]);
+    }
+
+    public function refuserBinome(Request $request, string $token)
+    {
+        $memoire = Memoire::where('binome_token', $token)->firstOrFail();
+
+        $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
+
+        if (!$matriculeConnecte || $matriculeConnecte !== $memoire->matricule_binome) {
+            return response()->json(['message' => 'Cette demande de confirmation ne vous concerne pas.'], 403);
+        }
+
+        if (!$memoire->estEnAttenteBinome()) {
+            return response()->json(['message' => 'Cette demande a déjà été traitée.'], 409);
+        }
+
+        $memoire->update([
+            'statut' => 'rejete',
+            'motif_rejet' => 'Le binôme désigné a refusé de confirmer ce dépôt.',
+        ]);
+
+        return response()->json([
+            'message' => 'Vous avez refusé cette association. L\'étudiant en sera informé.',
+        ]);
+    }
+
+    public function fichierConfirmationBinome(Request $request, string $token, string $type)
+{
+    $memoire = Memoire::where('binome_token', $token)->firstOrFail();
+
+    $matriculeConnecte = $request->user()->etudiantAutorise?->matricule;
+
+    if (!$matriculeConnecte || $matriculeConnecte !== $memoire->matricule_binome) {
+        abort(403, 'Cette demande de confirmation ne vous concerne pas.');
+    }
+
+    if (!in_array($type, ['memoire', 'preuve'])) {
+        abort(404);
+    }
+
+    $chemin = $type === 'memoire' ? $memoire->fichier_memoire : $memoire->fichier_preuve;
+
+    if (!$chemin) {
+        abort(404);
+    }
+
+    return Storage::disk('s3')->response($chemin);
+}
 }
 
-===== app\Models\Memoire.php =====
+===== config\sanctum.php =====
+
 <?php
 
-namespace App\Models;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Laravel\Sanctum\Http\Middleware\AuthenticateSession;
+use Laravel\Sanctum\Sanctum;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+return [
 
-class Memoire extends Model
-{
-    protected $fillable = [
-        'user_id',
-        'titre',
-        'resume',
-        'filiere_id',
-        'sous_filiere_id',
-        'annee',
-        'cycle',
-        'encadrant',
-        'fichier_memoire',
-        'apercu',
-        'fichier_preuve',
-        'statut',
-        'motif_rejet',
-        'valide_par',
-        'valide_le',
-    ];
+    /*
+    |--------------------------------------------------------------------------
+    | Stateful Domains
+    |--------------------------------------------------------------------------
+    |
+    | Requests from the following domains / hosts will receive stateful API
+    | authentication cookies. Typically, these should include your local
+    | and production domains which access your API via a frontend SPA.
+    |
+    */
 
-    protected function casts(): array
-    {
-        return [
-            'valide_le' => 'datetime',
-            'views_count' => 'integer',
-        ];
-    }
+    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
+        '%s%s',
+        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+        Sanctum::currentApplicationUrlWithPort(),
+        // Sanctum::currentRequestHost(),
+    ))),
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Sanctum Guards
+    |--------------------------------------------------------------------------
+    |
+    | This array contains the authentication guards that will be checked when
+    | Sanctum is trying to authenticate a request. If none of these guards
+    | are able to authenticate the request, Sanctum will use the bearer
+    | token that's present on an incoming request for authentication.
+    |
+    */
 
-    public function filiere(): BelongsTo
-    {
-        return $this->belongsTo(Filiere::class);
-    }
+    'guard' => ['web'],
 
-    public function validateur(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'valide_par');
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Expiration Minutes
+    |--------------------------------------------------------------------------
+    |
+    | This value controls the number of minutes until an issued token will be
+    | considered expired. This will override any values set in the token's
+    | "expires_at" attribute, but first-party sessions are not affected.
+    |
+    */
 
-    public function estValide(): bool
-    {
-        return $this->statut === 'valide';
-    }
-     
-        public function sousFiliere(): BelongsTo
-    {
-        return $this->belongsTo(SousFiliere::class);
-    }
-    
-    public function estEnAttente(): bool
-    {
-        return $this->statut === 'en_attente';
-    }
+    'expiration' => null,
 
-    public function scopeValides($query)
-    {
-        return $query->where('statut', 'valide');
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Token Prefix
+    |--------------------------------------------------------------------------
+    |
+    | Sanctum can prefix new tokens in order to take advantage of numerous
+    | security scanning initiatives maintained by open source platforms
+    | that notify developers if they commit tokens into repositories.
+    |
+    | See: https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning
+    |
+    */
 
-    public function scopeEnAttente($query)
-    {
-        return $query->where('statut', 'en_attente');
-    }
-}
+    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
 
-===== app\Models\EtudiantAutorise.php =====
-<?php
+    /*
+    |--------------------------------------------------------------------------
+    | Sanctum Middleware
+    |--------------------------------------------------------------------------
+    |
+    | When authenticating your first-party SPA with Sanctum you may need to
+    | customize some of the middleware Sanctum uses while processing the
+    | request. You may change the middleware listed below as required.
+    |
+    */
 
-namespace App\Models;
+    'middleware' => [
+        'authenticate_session' => AuthenticateSession::class,
+        'encrypt_cookies' => EncryptCookies::class,
+        'validate_csrf_token' => ValidateCsrfToken::class,
+    ],
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-
-class EtudiantAutorise extends Model
-{
-    protected $table = 'etudiants_autorises';
-
-    protected $fillable = [
-        'matricule',
-        'email',
-        'nom',
-        'prenom',
-        'filiere_id',
-        'annee_scolaire',
-        'niveau',
-        'compte_active',
-        'token_activation',
-        'token_expires_at',
-    ];
-
-    protected $hidden = [
-        'token_activation',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'compte_active' => 'boolean',
-            'token_expires_at' => 'datetime',
-        ];
-    }
-
-    public function filiere(): BelongsTo
-    {
-        return $this->belongsTo(Filiere::class);
-    }
-
-    public function user(): HasOne
-    {
-        return $this->hasOne(User::class);
-    }
-}
-
-===== database\migrations\2026_07_13_090858_create_memoires_table.php =====
-<?php
-
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-return new class extends Migration
-{
-    public function up(): void
-    {
-        Schema::create('memoires', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users');
-            $table->string('titre');
-            $table->text('resume');
-            $table->foreignId('filiere_id')->constrained('filieres');
-            $table->string('annee');
-            $table->string('encadrant');
-            $table->string('fichier_memoire');
-            $table->string('fichier_preuve');
-            $table->enum('statut', ['en_attente', 'valide', 'rejete'])->default('en_attente');
-            $table->text('motif_rejet')->nullable();
-            $table->foreignId('valide_par')->nullable()->constrained('users');
-            $table->timestamp('valide_le')->nullable();
-            $table->unsignedInteger('views_count')->default(0);
-            $table->timestamps();
-
-            $table->index(['statut', 'filiere_id', 'annee']);
-        });
-    }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('memoires');
-    }
-};
-
-===== database\migrations\2026_07_17_094217_add_apercu_and_cycle_to_memoires_table.php =====
-<?php
-
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-return new class extends Migration
-{
-    public function up(): void
-    {
-        Schema::table('memoires', function (Blueprint $table) {
-            $table->string('apercu')->nullable()->after('fichier_memoire');
-            $table->enum('cycle', ['licence', 'master'])->nullable()->after('annee');
-        });
-    }
-
-    public function down(): void
-    {
-        Schema::table('memoires', function (Blueprint $table) {
-            $table->dropColumn(['apercu', 'cycle']);
-        });
-    }
-};
-
-===== routes\api.php =====
-<?php
-
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\MemoireController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\EtudiantAutoriseController;
-use App\Http\Controllers\Api\FiliereController;
-use App\Http\Controllers\Api\SousFiliereController;
-use App\Http\Controllers\Api\ActualiteController;
-use App\Http\Controllers\Api\AdminRechercheController;
-
-Route::post('/auth/verifier-matricule', [AuthController::class, 'verifierMatricule']);
-Route::post('/auth/activer-compte', [AuthController::class, 'activerCompte']);
-Route::post('/auth/renvoyer-lien', [AuthController::class, 'renvoyerLien']);
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/mot-de-passe-oublie', [AuthController::class, 'demanderReinitialisation']);
-Route::post('/auth/reinitialiser-mot-de-passe', [AuthController::class, 'reinitialiserMotDePasse']);
-Route::post('/admin/etudiants-autorises/importer', [EtudiantAutoriseController::class, 'importer']);
-Route::get('/stats-publiques', [MemoireController::class, 'statsPubliques']);
-
-Route::get('/admin/stats', [MemoireController::class, 'stats']);
-Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
-Route::get('/memoires/publics/{memoire}', [MemoireController::class, 'afficherPublic']);
-Route::get('/memoires/{memoire}/fichier', [MemoireController::class, 'fichierPublic']);
-Route::get('/memoires/{memoire}/telecharger', [MemoireController::class, 'telechargerPublic']);
-Route::get('/filieres', [FiliereController::class, 'index']);
-Route::get('/sous-filieres', [SousFiliereController::class, 'index']);
-Route::get('/memoires/{memoire}/apercu', [MemoireController::class, 'apercuPublic']);
-Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
-Route::get('/memoires/plus-consultes', [MemoireController::class, 'plusConsultesPublic']);
-Route::get('/actualites', [ActualiteController::class, 'index']);
-
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/me', [AuthController::class, 'me']);
-    Route::put('/auth/mot-de-passe', [AuthController::class, 'changerMotDePasse']);
-    Route::post('/auth/changer-mot-de-passe', [AuthController::class, 'changerMotDePasse']);
-    Route::get('/memoires/mes-memoires', [MemoireController::class, 'mesMemoires']);
-    Route::get('/mes-memoires/{memoire}/fichier/{type}', [MemoireController::class, 'monFichier']);
-    Route::get('/mes-memoires/{memoire}/telecharger/{type}', [MemoireController::class, 'monTelechargement']);
-    Route::get('/memoires/{memoire}/mon-telechargement/{type}', [MemoireController::class, 'monTelechargement']);
-    Route::post('/memoires', [MemoireController::class, 'store']);
-    Route::put('/memoires/{memoire}', [MemoireController::class, 'update']);
-    Route::delete('/memoires/{memoire}', [MemoireController::class, 'destroy']);
-
-    Route::middleware('admin')->group(function () {
-        Route::get('/admin/memoires/en-attente', [MemoireController::class, 'enAttenteAdmin']);
-        Route::get('/admin/memoires', [MemoireController::class, 'tousAdmin']);
-        Route::post('/admin/memoires', [MemoireController::class, 'storeAdmin']);
-        Route::get('/admin/memoires/{memoire}/fichier/{type}', [MemoireController::class, 'fichierAdmin']);
-        Route::post('/admin/memoires/{memoire}/valider', [MemoireController::class, 'valider']);
-        Route::post('/admin/memoires/{memoire}/rejeter', [MemoireController::class, 'rejeter']);
-        Route::delete('/admin/memoires/{memoire}', [MemoireController::class, 'supprimerAdmin']);
-        Route::get('/admin/recherche-globale', [AdminRechercheController::class, 'index']);
-        Route::get('/admin/memoires/{memoire}', [MemoireController::class, 'showAdmin']);
-        Route::apiResource('/admin/etudiants-autorises', EtudiantAutoriseController::class)
-            ->parameters(['etudiants-autorises' => 'etudiantAutorise']);
-        
-            Route::apiResource('/admin/actualites', ActualiteController::class)
-            ->except(['index', 'show']);
-
-        Route::apiResource('/admin/filieres', FiliereController::class)
-            ->except(['index', 'show']);
-
-        Route::apiResource('/admin/sous-filieres', SousFiliereController::class)
-            ->except(['index', 'show']);
-    });
-});
+];
 

@@ -359,6 +359,15 @@ class AuthController extends Controller
             'message' => 'Si cet email existe, un lien de reinitialisation a ete envoye.',
         ]);
     }
+    
+    public function verifierAccesL2(Request $request)
+{
+    if (!$request->user() instanceof AccesL2) {
+        return response()->json(['message' => 'Accès invalide.'], 403);
+    }
+
+    return response()->json(['message' => 'Accès en lecture seule valide.']);
+}
 
     public function reinitialiserMotDePasse(Request $request)
     {
