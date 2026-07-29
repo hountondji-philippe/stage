@@ -9,13 +9,30 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        User::firstOrCreate(
-            ['email' => env('ADMIN_EMAIL', 'admin@memoires-plus.local')],
+        $admins = [
             [
+                'email' => env('ADMIN_EMAIL', 'admin@memoires-plus.local'),
                 'password' => env('ADMIN_PASSWORD', 'changeme123'),
-                'role' => 'admin',
-                'etudiant_autorise_id' => null,
-            ]
-        );
+            ],
+            [
+                'email' => env('ADMIN_EMAIL_2'),
+                'password' => env('ADMIN_PASSWORD_2'),
+            ],
+        ];
+
+        foreach ($admins as $admin) {
+            if (empty($admin['email']) || empty($admin['password'])) {
+                continue;
+            }
+
+            User::firstOrCreate(
+                ['email' => $admin['email']],
+                [
+                    'password' => $admin['password'],
+                    'role' => 'admin',
+                    'etudiant_autorise_id' => null,
+                ]
+            );
+        }
     }
 }
