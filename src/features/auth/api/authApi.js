@@ -84,3 +84,7 @@ export const authApi = {
   demanderReinitialisation,
   reinitialiserMotDePasse,
 };
+export async function verifierAccesL2() {
+  const { data } = await apiClient.get("/auth/verifier-acces-l2");
+  return data;
+}

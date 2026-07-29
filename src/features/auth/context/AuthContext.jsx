@@ -22,13 +22,20 @@ export function AuthProvider({ children }) {
 
     // Session L2 en lecture seule : le token pointe vers un modèle AccesL2,
     // pas un User — appeler /auth/me planterait ou renverrait n'importe quoi.
-    // On ne restaure pas de "user" réel, on expose juste le flag.
     if (estLectureSeule) {
-      setUser(null);
-      setLectureSeule(true);
-      setLoading(false);
-      return;
-    }
+  try {
+    await verifierAccesL2();
+    setUser(null);
+    setLectureSeule(true);
+  } catch {
+    localStorage.removeItem("mplus_token");
+    localStorage.removeItem("mplus_lecture_seule");
+    setUser(null);
+    setLectureSeule(false);
+  }
+  setLoading(false);
+  return;
+}
 
     try {
       const { user } = await getMe();
