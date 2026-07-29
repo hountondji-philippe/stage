@@ -13,7 +13,6 @@ Route::get('/verification/{memoire}', [MemoireController::class, 'verifierFiche'
     ->middleware('signed');
 
 Route::get('/verification/{memoire}/telecharger', [MemoireController::class, 'telechargerVerification'])
-    ->name('memoire.verification.telecharger')
-    ->middleware('signed');
+    ->name('memoire.verification.telecharger');
 
 
