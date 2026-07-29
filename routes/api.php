@@ -101,3 +101,11 @@ Route::middleware(['auth:sanctum', 'lecture.seule'])->group(function () {
     ->middleware('signed')
     ->name('memoires.fichier.signe');
     
+
+    Route::get('/memoires/{memoire}/fichier-signe', [MemoireController::class, 'fichierSigne'])
+    ->middleware('signed')
+    ->name('memoires.fichier.signe');
+
+Route::get('/memoires/{memoire}/fiche-signee', [MemoireController::class, 'fichePreuveSignee'])
+    ->middleware('signed')
+    ->name('memoires.fiche.signee');

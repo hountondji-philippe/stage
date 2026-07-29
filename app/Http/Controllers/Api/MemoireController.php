@@ -115,6 +115,16 @@ $memoires = $query->paginate(12);
 
         return Storage::disk('s3')->response($memoire->fichier_memoire);
     }
+
+    public function fichePreuveSignee(Memoire $memoire)
+{
+    if (!$memoire->fichier_preuve) {
+        abort(404);
+    }
+
+    return Storage::disk('s3')->response($memoire->fichier_preuve);
+}
+
     public function telechargerPublic(Memoire $memoire)
     {
         if (!$memoire->estValide()) {
@@ -514,7 +524,7 @@ private function genererFicheDepot(Memoire $memoire, ?EtudiantAutorise $etudiant
 
 private function genererQrVerification(Memoire $memoire): string
 {
-    $url = \Illuminate\Support\Facades\URL::signedRoute('memoires.fichier.signe', ['memoire' => $memoire->id]);
+    $url = \Illuminate\Support\Facades\URL::signedRoute('memoires.fiche.signee', ['memoire' => $memoire->id]);
 
     $svg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(200)
         ->margin(1)
