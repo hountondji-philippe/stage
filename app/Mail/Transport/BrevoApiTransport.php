@@ -44,6 +44,21 @@ class BrevoApiTransport extends AbstractTransport
             'htmlContent' => $email->getHtmlBody() ?: $email->getTextBody(),
         ];
 
+        $attachments = [];
+        foreach ($email->getAttachments() as $attachment) {
+            $filename = $attachment->getPreparedHeaders()->getHeaderParameter('Content-Disposition', 'filename')
+                ?? 'piece-jointe.pdf';
+
+            $attachments[] = [
+                'content' => base64_encode($attachment->getBody()),
+                'name' => $filename,
+            ];
+        }
+
+        if (!empty($attachments)) {
+            $payload['attachment'] = $attachments;
+        }
+
         $response = Http::withHeaders([
             'api-key' => $this->apiKey,
             'Content-Type' => 'application/json',
