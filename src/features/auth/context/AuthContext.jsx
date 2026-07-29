@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect, useCallback } from "react";
-import { getMe, logout as logoutRequest } from "../api/authApi";
+import { getMe, logout as logoutRequest, verifierAccesL2 } from "../api/authApi";
 import { ROUTES } from "../../../router/paths";
 
 export const AuthContext = createContext(null);

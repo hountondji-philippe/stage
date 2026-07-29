@@ -83,6 +83,7 @@ export const authApi = {
   modifierEmail,
   demanderReinitialisation,
   reinitialiserMotDePasse,
+  verifierAccesL2,
 };
 export async function verifierAccesL2() {
   const { data } = await apiClient.get("/auth/verifier-acces-l2");
