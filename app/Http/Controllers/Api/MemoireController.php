@@ -13,6 +13,7 @@ use App\Models\EtudiantAutorise;
 use App\Models\Filiere;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\PeriodeDepot;
+use Illuminate\Support\Facades\URL;
 
 class MemoireController extends Controller
 {
@@ -90,7 +91,30 @@ $memoires = $query->paginate(12);
 
         return Storage::disk('s3')->response($memoire->fichier_memoire);
     }
+     
+    public function lienFichierPublic(Memoire $memoire)
+    {
+        if (!$memoire->estValide()) {
+            abort(404);
+        }
 
+        $url = URL::temporarySignedRoute(
+            'memoires.fichier.signe',
+            now()->addMinutes(5),
+            ['memoire' => $memoire->id]
+        );
+
+        return response()->json(['url' => $url]);
+    }
+
+    public function fichierSigne(Memoire $memoire)
+    {
+        if (!$memoire->estValide()) {
+            abort(404);
+        }
+
+        return Storage::disk('s3')->response($memoire->fichier_memoire);
+    }
     public function telechargerPublic(Memoire $memoire)
     {
         if (!$memoire->estValide()) {

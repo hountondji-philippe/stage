@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/recherche/memoires', [MemoireController::class, 'rechercherPublic']);
     Route::get('/memoires/publics/{memoire}', [MemoireController::class, 'afficherPublic']);
     Route::get('/memoires/{memoire}/fichier', [MemoireController::class, 'fichierPublic']);
+    Route::get('/memoires/{memoire}/lien-fichier', [MemoireController::class, 'lienFichierPublic']);
     Route::get('/memoires/{memoire}/telecharger', [MemoireController::class, 'telechargerPublic']);
     Route::get('/memoires/{memoire}/apercu', [MemoireController::class, 'apercuPublic']);
     Route::get('/memoires/plus-consultes', [MemoireController::class, 'plusConsultesPublic']);
@@ -91,5 +92,10 @@ Route::middleware(['auth:sanctum', 'lecture.seule'])->group(function () {
 
         Route::apiResource('/admin/sous-filieres', SousFiliereController::class)
             ->except(['index', 'show']);
+        
+        Route::get('/memoires/{memoire}/fichier-signe', [MemoireController::class, 'fichierSigne'])
+    ->middleware('signed')
+    ->name('memoires.fichier.signe');
+    
     });
 });
