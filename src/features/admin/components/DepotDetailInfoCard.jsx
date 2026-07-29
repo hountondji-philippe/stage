@@ -10,13 +10,22 @@ export default function DepotDetailInfoCard({ memoire }) {
   const etudiant = memoire.user?.etudiantAutorise ?? memoire.user?.etudiant_autorise;
   const nomComplet = etudiant ? `${etudiant.nom} ${etudiant.prenom}` : memoire.user?.email ?? "—";
 
+  // Binôme : nom/prénom stockés directement sur Memoire (pas une relation),
+  // uniquement présents si mode_depot === "binome".
+  const estBinome = memoire.mode_depot === "binome";
+  const nomBinome =
+    estBinome && memoire.prenom_binome
+      ? `${memoire.prenom_binome} ${memoire.nom_binome}`
+      : null;
+
   const rows = [
     { label: "Auteur", value: nomComplet },
+    nomBinome && { label: "Binôme", value: nomBinome },
     { label: "Filière", value: memoire.filiere?.nom },
     { label: "Année", value: memoire.annee },
     { label: "Encadrant", value: memoire.encadrant },
     { label: "Date de dépôt", value: formatDate(memoire.created_at) },
-  ];
+  ].filter(Boolean);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
