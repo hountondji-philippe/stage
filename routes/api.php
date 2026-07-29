@@ -37,7 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sous-filieres', [SousFiliereController::class, 'index']);
     Route::get('/actualites', [ActualiteController::class, 'index']);
     Route::get('/actualites/{actualite}', [ActualiteController::class, 'show']);
-     Route::get('/auth/verifier-acces-l2', [AuthController::class, 'verifierAccesL2']);
+    Route::get('/auth/verifier-acces-l2', [AuthController::class, 'verifierAccesL2']);
 });
 
 // --- Actions complètes : réservées aux comptes User (bloque l'accès L2 en lecture seule) ---
