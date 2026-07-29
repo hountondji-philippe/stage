@@ -144,8 +144,6 @@ export default function EtudiantLayout({ children }) {
         </div>
 
         <div className="flex items-center gap-4">
-          
-
           <div className="relative">
             <button
               onClick={() => setMenuOuvert((v) => !v)}
@@ -184,7 +182,19 @@ export default function EtudiantLayout({ children }) {
         </div>
       </header>
 
-      <main className="min-h-screen px-4 pb-10 pt-28 md:ml-[280px] md:px-10">{children}</main>
+      <main className="min-h-screen px-4 pb-24 pt-28 md:ml-[280px] md:px-10 md:pb-10">{children}</main>
+
+      {/* Bottom nav (mobile uniquement) */}
+      <nav className="fixed bottom-0 left-0 z-50 flex h-16 w-full items-center justify-around border-t border-gray-200 bg-white md:hidden">
+        {NAV_ITEMS.slice(0, 4).map((item) => (
+          <NavItem
+            key={item.to}
+            {...item}
+            label={item.label.split(" ")[0]}
+            className="flex-col gap-1 px-2 py-2 text-xs !text-gray-600"
+          />
+        ))}
+      </nav>
 
       {showLogoutConfirm && (
         <LogoutConfirmModal
