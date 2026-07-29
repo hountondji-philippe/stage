@@ -18,9 +18,21 @@ function InfoRow({ icon: Icon, label, value }) {
 export default function InfoCard({ memoire }) {
   const [resumeOuvert, setResumeOuvert] = useState(false);
 
-  const auteur = memoire.user?.etudiant_autorise
-    ? `${memoire.user.etudiant_autorise.prenom} ${memoire.user.etudiant_autorise.nom}`
+  // Le nom de cette relation change de casse selon le contrôleur backend
+  // (etudiant_autorise ici, etudiantAutorise là) — on gère les deux
+  // en attendant que ce soit uniformisé côté Laravel.
+  const etudiantAutorise = memoire.user?.etudiant_autorise || memoire.user?.etudiantAutorise;
+  const auteur = etudiantAutorise
+    ? `${etudiantAutorise.prenom} ${etudiantAutorise.nom}`
     : "Auteur inconnu";
+
+  // Binôme : nom/prénom stockés directement sur Memoire (pas une relation),
+  // uniquement présents si mode_depot === "binome".
+  const estBinome = memoire.mode_depot === "binome";
+  const nomBinome =
+    estBinome && memoire.prenom_binome
+      ? `${memoire.prenom_binome} ${memoire.nom_binome}`
+      : null;
 
   return (
     <aside className="w-full md:w-[35%]">
@@ -50,6 +62,7 @@ export default function InfoCard({ memoire }) {
 
         <div className="flex flex-col gap-4">
           <InfoRow icon={User} label="Auteur" value={auteur} />
+          {nomBinome && <InfoRow icon={Users} label="Binôme" value={nomBinome} />}
           <InfoRow icon={GraduationCap} label="Filière" value={memoire.filiere?.nom} />
           <InfoRow icon={Calendar} label="Année" value={memoire.annee} />
           <InfoRow icon={Users} label="Maître de mémoire" value={memoire.encadrant} />
