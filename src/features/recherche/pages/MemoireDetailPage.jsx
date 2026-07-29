@@ -1,16 +1,41 @@
 import { useParams, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import PdfViewer from "../components/detail/PdfViewer";
 import InfoCard from "../components/detail/InfoCard";
 import SimilarMemoires from "../components/detail/SimilarMemoires";
 import LoadingScreen from "../../../components/ui/LoadingScreen";
 import { useMemoireDetail } from "../hooks/useMemoireDetail";
-import { getFichierUrl, getTelechargerUrl } from "../api/rechercheApi";
+import { getFichierUrlSigne, getTelechargerUrl } from "../api/rechercheApi";
 import { ROUTES } from "../../../router/paths";
 
 export default function MemoireDetailPage() {
   const { id } = useParams();
   const { memoire, similaires, loading, error } = useMemoireDetail(id);
+  const [fichierUrlSigne, setFichierUrlSigne] = useState(null);
+  const [chargementFichier, setChargementFichier] = useState(true);
+
+  useEffect(() => {
+    if (!memoire) return;
+
+    let annule = false;
+    setChargementFichier(true);
+
+    getFichierUrlSigne(id)
+      .then((url) => {
+        if (!annule) setFichierUrlSigne(url);
+      })
+      .catch(() => {
+        if (!annule) setFichierUrlSigne(null);
+      })
+      .finally(() => {
+        if (!annule) setChargementFichier(false);
+      });
+
+    return () => {
+      annule = true;
+    };
+  }, [id, memoire]);
 
   if (loading) {
     return <LoadingScreen message="Chargement du mémoire..." />;
@@ -45,11 +70,21 @@ export default function MemoireDetailPage() {
 
       <div className="flex flex-col-reverse gap-6 md:flex-row">
         <div className="flex w-full flex-col gap-6 md:w-[65%]">
-          <PdfViewer
-            fichierUrl={getFichierUrl(id)}
-            telechargerUrl={getTelechargerUrl(id)}
-            nomFichier={nomFichier}
-          />
+          {chargementFichier ? (
+            <div className="flex h-[500px] w-full items-center justify-center rounded-xl border border-gray-100 bg-white sm:h-[700px] md:h-[800px]">
+              <p className="text-sm text-gray-400">Chargement du document...</p>
+            </div>
+          ) : fichierUrlSigne ? (
+            <PdfViewer
+              fichierUrl={fichierUrlSigne}
+              telechargerUrl={getTelechargerUrl(id)}
+              nomFichier={nomFichier}
+            />
+          ) : (
+            <div className="flex h-[500px] w-full items-center justify-center rounded-xl border border-gray-100 bg-white sm:h-[700px] md:h-[800px]">
+              <p className="text-sm text-red-500">Impossible de charger le document.</p>
+            </div>
+          )}
         </div>
         <InfoCard memoire={memoire} telechargerUrl={getTelechargerUrl(id)} />
       </div>

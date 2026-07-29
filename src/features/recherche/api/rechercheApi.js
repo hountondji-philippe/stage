@@ -27,13 +27,16 @@ export async function getMemoireDetail(id) {
   return data.memoire;
 }
 
-// Construit les URLs directes (pas via axios, pour <iframe>/<a href>)
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-
-export function getFichierUrl(id) {
-  return `${API_URL}/memoires/${id}/fichier`;
+/**
+ * Demande une URL signée temporaire (5 min) pour afficher le PDF dans un <iframe>.
+ * Passe par axios (donc authentifié avec le Bearer token), contrairement à l'ancienne URL directe.
+ */
+export async function getFichierUrlSigne(id) {
+  const { data } = await apiClient.get(`/memoires/${id}/lien-fichier`);
+  return data.url;
 }
 
 export function getTelechargerUrl(id) {
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
   return `${API_URL}/memoires/${id}/telecharger`;
 }
