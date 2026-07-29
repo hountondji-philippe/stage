@@ -93,9 +93,10 @@ Route::middleware(['auth:sanctum', 'lecture.seule'])->group(function () {
         Route::apiResource('/admin/sous-filieres', SousFiliereController::class)
             ->except(['index', 'show']);
         
-        Route::get('/memoires/{memoire}/fichier-signe', [MemoireController::class, 'fichierSigne'])
+    });
+});
+
+ Route::get('/memoires/{memoire}/fichier-signe', [MemoireController::class, 'fichierSigne'])
     ->middleware('signed')
     ->name('memoires.fichier.signe');
     
-    });
-});
