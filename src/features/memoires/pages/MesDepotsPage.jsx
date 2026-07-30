@@ -26,7 +26,8 @@ export default function MesDepotsPage() {
         <p className="mt-1 text-gray-500">Historique complet de vos mémoires déposés.</p>
       </div>
 
-<div className="mb-8 -mx-4 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-gray-200 px-4 sm:mx-0 sm:gap-2 sm:px-0">        {TABS.map((tab) => {
+      <div className="mb-8 flex gap-2 border-b border-gray-200">
+        {TABS.map((tab) => {
           const count =
             tab.key === "tout"
               ? memoires.length
