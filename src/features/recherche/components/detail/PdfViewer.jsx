@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, Minimize2 } from "lucide-react";
+import { FileText, ZoomIn, ZoomOut, Maximize2, Minimize2 } from "lucide-react";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -8,7 +8,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 export default function PdfViewer({ fichierUrl, nomFichier }) {
   const [numPages, setNumPages] = useState(null);
-  const [pageActuelle, setPageActuelle] = useState(1);
   const [echelle, setEchelle] = useState(1.1);
   const [pleinEcran, setPleinEcran] = useState(false);
   const conteneurRef = useRef(null);
@@ -59,40 +58,27 @@ export default function PdfViewer({ fichierUrl, nomFichier }) {
         </div>
       </div>
 
-      <div className={`flex w-full items-center justify-center overflow-auto bg-gray-100 ${pleinEcran ? "h-[calc(100vh-64px)]" : "h-[500px] sm:h-[700px] md:h-[800px]"}`}>
+      <div
+        className={`flex w-full flex-col items-center gap-3 overflow-auto bg-gray-100 py-3 ${pleinEcran ? "h-[calc(100vh-64px)]" : "h-[500px] sm:h-[700px] md:h-[800px]"}`}
+      >
         <Document
           file={fichierUrl}
           onLoadSuccess={({ numPages }) => setNumPages(numPages)}
           loading={<p className="text-sm text-gray-400">Chargement du document...</p>}
           error={<p className="text-sm text-red-500">Impossible de charger le document.</p>}
         >
-          <Page pageNumber={pageActuelle} scale={echelle} renderAnnotationLayer={false} />
+          {numPages &&
+            Array.from({ length: numPages }, (_, index) => (
+              <Page
+                key={index + 1}
+                pageNumber={index + 1}
+                scale={echelle}
+                renderAnnotationLayer={false}
+                className="mb-3 shadow-sm"
+              />
+            ))}
         </Document>
       </div>
-
-      {numPages && (
-        <div className="flex items-center justify-center gap-4 border-t border-gray-100 py-3">
-          <button
-            disabled={pageActuelle <= 1}
-            onClick={() => setPageActuelle((p) => p - 1)}
-            className="disabled:opacity-30"
-            aria-label="Page précédente"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <span className="text-sm text-gray-500">
-            Page {pageActuelle} / {numPages}
-          </span>
-          <button
-            disabled={pageActuelle >= numPages}
-            onClick={() => setPageActuelle((p) => p + 1)}
-            className="disabled:opacity-30"
-            aria-label="Page suivante"
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
-      )}
     </div>
   );
 }
