@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
+import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, Minimize2 } from "lucide-react";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -10,9 +10,22 @@ export default function PdfViewer({ fichierUrl, nomFichier }) {
   const [numPages, setNumPages] = useState(null);
   const [pageActuelle, setPageActuelle] = useState(1);
   const [echelle, setEchelle] = useState(1.1);
+  const [pleinEcran, setPleinEcran] = useState(false);
+  const conteneurRef = useRef(null);
+
+  const basculerPleinEcran = async () => {
+    if (!document.fullscreenElement) {
+      await conteneurRef.current?.requestFullscreen?.();
+      setPleinEcran(true);
+    } else {
+      await document.exitFullscreen?.();
+      setPleinEcran(false);
+    }
+  };
 
   return (
     <div
+      ref={conteneurRef}
       className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-[0px_4px_20px_rgba(19,36,107,0.05)]"
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -36,10 +49,17 @@ export default function PdfViewer({ fichierUrl, nomFichier }) {
           >
             <ZoomIn size={18} />
           </button>
+          <button
+            onClick={basculerPleinEcran}
+            className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+            aria-label={pleinEcran ? "Quitter le plein écran" : "Plein écran"}
+          >
+            {pleinEcran ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
         </div>
       </div>
 
-      <div className="flex h-[500px] w-full items-center justify-center overflow-auto bg-gray-100 sm:h-[700px] md:h-[800px]">
+      <div className={`flex w-full items-center justify-center overflow-auto bg-gray-100 ${pleinEcran ? "h-[calc(100vh-64px)]" : "h-[500px] sm:h-[700px] md:h-[800px]"}`}>
         <Document
           file={fichierUrl}
           onLoadSuccess={({ numPages }) => setNumPages(numPages)}
