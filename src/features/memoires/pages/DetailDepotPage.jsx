@@ -35,9 +35,9 @@ function InfoItem({ icon: Icon, label, value }) {
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-[var(--color-primary)]">
         <Icon size={20} />
       </div>
-      <div>
+      <div className="min-w-0">
         <p className="text-xs font-bold uppercase tracking-tight text-gray-400">{label}</p>
-        <p className="text-sm font-medium text-gray-800">{value || "—"}</p>
+        <p className="break-words text-sm font-medium text-gray-800">{value || "—"}</p>
       </div>
     </div>
   );
@@ -81,17 +81,17 @@ export default function DetailDepotPage() {
   return (
     <EtudiantLayout>
       {/* Breadcrumb */}
-      <nav className="mb-6 flex items-center gap-2 text-sm text-gray-500">
-        <Link to={ROUTES.espaceEtudiant} className="hover:text-[var(--color-primary)]">
+      <nav className="mb-6 flex items-center gap-2 overflow-hidden text-sm text-gray-500">
+        <Link to={ROUTES.espaceEtudiant} className="shrink-0 hover:text-[var(--color-primary)]">
           Mes dépôts
         </Link>
-        <ChevronRight size={16} />
-        <span className="font-bold text-[var(--color-primary)]">{memoire.titre}</span>
+        <ChevronRight size={16} className="shrink-0" />
+        <span className="truncate font-bold text-[var(--color-primary)]">{memoire.titre}</span>
       </nav>
 
       {/* Header */}
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <h1 className="max-w-4xl text-2xl font-bold text-[var(--color-primary)] md:text-3xl">
+        <h1 className="max-w-4xl break-words text-2xl font-bold text-[var(--color-primary)] md:text-3xl">
           {memoire.titre}
         </h1>
         <span
@@ -106,12 +106,12 @@ export default function DetailDepotPage() {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_380px]">
         {/* LEFT */}
         <div className="order-2 space-y-6 lg:order-1">
-          <section className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+          <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
             <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-[var(--color-primary)]">
               <BookOpen size={20} />
               Résumé du mémoire
             </h2>
-            <p className="mb-8 text-lg leading-relaxed text-gray-600">{memoire.resume}</p>
+            <p className="mb-8 text-base leading-relaxed text-gray-600 md:text-lg">{memoire.resume}</p>
 
             <div className="grid grid-cols-1 gap-6 border-t border-gray-100 pt-8 md:grid-cols-2">
               <InfoItem icon={GraduationCap} label="Filière" value={memoire.filiere?.nom} />
@@ -132,8 +132,8 @@ export default function DetailDepotPage() {
         </div>
 
         {/* RIGHT */}
-        <aside className="sticky top-28 order-1 space-y-6 lg:order-2">
-          <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+        <aside className="order-1 space-y-6 lg:sticky lg:top-28 lg:order-2">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
             <h3 className="mb-8 text-xl font-semibold text-[var(--color-primary)]">Suivi du dossier</h3>
             <StatutTimeline statut={memoire.statut} createdAt={memoire.created_at} valideLe={memoire.valide_le} />
 
