@@ -287,7 +287,9 @@ public function store(Request $request)
         $prenomBinome = $etudiantBinome->prenom;
     }
 
-    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 's3');
+    $fichierUpload = $request->file('fichier_memoire');
+$nomOriginal = $fichierUpload->getClientOriginalName();
+$cheminMemoire = $fichierUpload->store('memoires', 's3');
 $cheminApercu = null;
 try {
     $cheminTempSource = storage_path('app/temp/' . Str::random(40) . '.pdf');
@@ -332,6 +334,7 @@ try {
         'niveau' => $niveauActuel,
         'encadrant' => $request->encadrant,
         'fichier_memoire' => $cheminMemoire,
+        'nom_original_fichier' => $nomOriginal,
         'statut' => $estBinome ? 'en_attente_binome' : 'en_attente',
         'apercu' => $cheminApercu,
         'cycle' => $request->cycle,
@@ -411,8 +414,10 @@ public function update(Request $request, Memoire $memoire)
         || $request->filled('mode_depot');
 
     if ($request->hasFile('fichier_memoire')) {
-        Storage::disk('s3')->delete($memoire->fichier_memoire);
-        $donnees['fichier_memoire'] = $request->file('fichier_memoire')->store('memoires', 's3');
+    Storage::disk('s3')->delete($memoire->fichier_memoire);
+    $fichierUpload = $request->file('fichier_memoire');
+    $donnees['nom_original_fichier'] = $fichierUpload->getClientOriginalName();
+    $donnees['fichier_memoire'] = $fichierUpload->store('memoires', 's3');
     }
 
     $etaitRejete = $memoire->estRejete();
@@ -630,7 +635,9 @@ private function encoderLogo(string $chemin): ?string
         $prenomBinome = $etudiantBinome->prenom;
     }
 
-    $cheminMemoire = $request->file('fichier_memoire')->store('memoires', 's3');
+    $fichierUpload = $request->file('fichier_memoire');
+$nomOriginal = $fichierUpload->getClientOriginalName();
+$cheminMemoire = $fichierUpload->store('memoires', 's3');
     $cheminApercu = null;
     try {
         $cheminTempSource = storage_path('app/temp/' . Str::random(40) . '.pdf');
@@ -674,6 +681,7 @@ private function encoderLogo(string $chemin): ?string
         'annee' => $request->annee,
         'encadrant' => $request->encadrant,
         'fichier_memoire' => $cheminMemoire,
+        'nom_original_fichier' => $nomOriginal,
         'statut' => 'valide',
         'apercu' => $cheminApercu,
         'cycle' => $request->cycle,
