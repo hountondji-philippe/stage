@@ -7,7 +7,6 @@ import {
   Calendar,
   User,
   History,
-  SquarePen,
   Headset,
   ArrowRight,
 } from "lucide-react";
@@ -136,18 +135,6 @@ export default function DetailDepotPage() {
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
             <h3 className="mb-8 text-xl font-semibold text-[var(--color-primary)]">Suivi du dossier</h3>
             <StatutTimeline statut={memoire.statut} createdAt={memoire.created_at} valideLe={memoire.valide_le} />
-
-            {memoire.statut === "en_attente" && (
-              <div className="mt-10">
-                <button className="flex w-full items-center justify-center gap-3 rounded-xl bg-[var(--color-primary)] py-4 text-sm font-semibold text-white transition-all hover:opacity-90">
-                  <SquarePen size={18} />
-                  Modifier mon dépôt
-                </button>
-                <p className="mt-4 text-center text-xs leading-relaxed text-gray-400">
-                  La modification reste possible tant que le statut n'est pas "Validé" ou "Rejeté".
-                </p>
-              </div>
-            )}
           </div>
 
           <div className="rounded-2xl border border-[var(--color-primary)]/10 bg-[var(--color-bg)] p-6">
