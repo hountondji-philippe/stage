@@ -52,7 +52,7 @@ export default function MemoireDetailPage() {
     );
   }
 
-  const nomFichier = memoire.fichier_memoire?.split("/").pop() || "memoire.pdf";
+  const nomFichier = memoire.nom_original_fichier || memoire.fichier_memoire?.split("/").pop() || "memoire.pdf";
 
   return (
     <main className="mx-auto w-full max-w-[1280px] flex-grow px-4 py-8 md:px-10">
