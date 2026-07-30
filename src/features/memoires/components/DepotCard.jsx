@@ -41,7 +41,6 @@ export default function DepotCard({ depot }) {
   const matriculeConnecte = user?.etudiant_autorise?.matricule;
   const estBinome = !estProprietaire && matriculeConnecte && matriculeConnecte === matricule_binome;
 
-  const modifiable = estProprietaire && (statut === "en_attente" || statut === "rejete");
   const enAttenteConfirmationBinome = statut === "en_attente_binome";
 
   function handleVoirDetail() {
@@ -107,11 +106,7 @@ export default function DepotCard({ depot }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {modifiable ? (
-          <Button variant="outline" onClick={() => navigate(ROUTES.depotEtudiantModifier(id))}>
-            Modifier
-          </Button>
-        ) : enAttenteConfirmationBinome && estBinome ? (
+        {enAttenteConfirmationBinome && estBinome ? (
           <Button variant="primary" onClick={handleAllerConfirmation}>
             Confirmer / Refuser
           </Button>
