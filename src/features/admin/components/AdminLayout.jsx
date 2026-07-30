@@ -151,19 +151,16 @@ export default function AdminLayout({ children }) {
         {children}
       </main>
 
-      {/* Bottom nav (mobile) — conservée pour l'admin, contrairement à
-          EtudiantLayout qui n'en a pas ; voir remarque envoyée à Samson */}
-      <nav className="fixed bottom-0 left-0 z-50 flex h-16 w-full items-center justify-around border-t border-gray-200 bg-white md:hidden">
-        {NAV_ITEMS.slice(0, 4).map((item) => (
-          <NavItem
-            key={item.to}
-            {...item}
-            label={item.label.split(" ")[0]}
-            className="flex-col gap-1 px-2 py-2 text-xs !text-gray-600"
-          />
-        ))}
-      </nav>
-
+      <nav className="fixed bottom-0 left-0 z-50 flex h-16 w-full items-center gap-1 overflow-x-auto border-t border-gray-200 bg-white px-2 md:hidden">
+  {NAV_ITEMS.map((item) => (
+    <NavItem
+      key={item.to}
+      {...item}
+      label={item.label.split(" ")[0]}
+      className="flex shrink-0 flex-col items-center gap-1 px-3 py-2 text-xs !text-gray-600"
+    />
+  ))}
+</nav>
       {showLogoutConfirm && (
         <LogoutConfirmModal
           onCancel={() => setShowLogoutConfirm(false)}

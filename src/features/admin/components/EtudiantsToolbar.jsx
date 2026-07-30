@@ -14,8 +14,8 @@ export default function EtudiantsToolbar({
 
   return (
     <div className="flex flex-col flex-wrap items-start justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center">
-      <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:flex-1">
-        <div className="relative w-full sm:w-80 lg:max-w-xs lg:flex-1">
+      <div className="flex w-full flex-col flex-wrap gap-3 md:flex-row md:items-center lg:w-auto lg:flex-1">
+        <div className="relative w-full min-w-0 md:max-w-xs lg:flex-1">
           <Search
             size={18}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -32,7 +32,7 @@ export default function EtudiantsToolbar({
         <select
           value={filiere}
           onChange={(e) => onFiliereChange(e.target.value)}
-          className="w-full shrink-0 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-600 outline-none focus:border-[var(--color-primary)] sm:w-auto"
+          className="w-full min-w-0 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-600 outline-none focus:border-[var(--color-primary)] md:w-auto md:max-w-[220px]"
         >
           <option value="">Toutes les filières</option>
           {filieres.map((f) => (
