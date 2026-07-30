@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -62,6 +62,25 @@ export default function AdminLayout({ children }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { logout } = useAuth();
 
+  // Fondus gauche/droite sur la nav mobile : indiquent qu'on peut encore
+  // scroller de ce côté-là. Réévalués à chaque scroll/resize.
+  const mobileNavRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollFade = useCallback(() => {
+    const el = mobileNavRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    updateScrollFade();
+    window.addEventListener("resize", updateScrollFade);
+    return () => window.removeEventListener("resize", updateScrollFade);
+  }, [updateScrollFade]);
+
   const handleLogoutClick = () => {
     setMenuOuvert(false);
     setShowLogoutConfirm(true);
@@ -106,8 +125,6 @@ export default function AdminLayout({ children }) {
         <GlobalSearch />
 
         <div className="flex items-center gap-4">
-          
-
           <div className="relative">
             <button
               onClick={() => setMenuOuvert((v) => !v)}
@@ -151,16 +168,32 @@ export default function AdminLayout({ children }) {
         {children}
       </main>
 
-      <nav className="fixed bottom-0 left-0 z-50 flex h-16 w-full items-center gap-1 overflow-x-auto border-t border-gray-200 bg-white px-2 md:hidden">
-  {NAV_ITEMS.map((item) => (
-    <NavItem
-      key={item.to}
-      {...item}
-      label={item.label.split(" ")[0]}
-      className="flex shrink-0 flex-col items-center gap-1 px-3 py-2 text-xs !text-gray-600"
-    />
-  ))}
-</nav>
+      {/* Bottom nav (mobile) — tous les items, défilement horizontal,
+          avec fondus gauche/droite qui indiquent qu'il y a plus à voir. */}
+      <div className="fixed bottom-0 left-0 z-50 w-full md:hidden">
+        <nav
+          ref={mobileNavRef}
+          onScroll={updateScrollFade}
+          className="relative flex h-16 items-center gap-1 overflow-x-auto border-t border-gray-200 bg-white px-2"
+        >
+          {NAV_ITEMS.map((item) => (
+            <NavItem
+              key={item.to}
+              {...item}
+              label={item.label.split(" ")[0]}
+              className="flex shrink-0 flex-col items-center gap-1 px-3 py-2 text-xs !text-gray-600"
+            />
+          ))}
+        </nav>
+
+        {canScrollLeft && (
+          <div className="pointer-events-none absolute bottom-0 left-0 h-16 w-8 bg-gradient-to-r from-white to-transparent" />
+        )}
+        {canScrollRight && (
+          <div className="pointer-events-none absolute bottom-0 right-0 h-16 w-8 bg-gradient-to-l from-white to-transparent" />
+        )}
+      </div>
+
       {showLogoutConfirm && (
         <LogoutConfirmModal
           onCancel={() => setShowLogoutConfirm(false)}

@@ -1,17 +1,24 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function Pagination({ currentPage, totalPages, totalItems, pageSize, onPageChange }) {
+export default function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+  itemLabel = "dépôts",
+}) {
   if (totalItems === 0) return null;
 
   const debut = (currentPage - 1) * pageSize + 1;
   const fin = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-4">
+    <div className="flex flex-col gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
       <span className="text-xs font-medium text-gray-500">
-        Affichage {debut}-{fin} sur {totalItems} dépôts
+        Affichage {debut}-{fin} sur {totalItems} {itemLabel}
       </span>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
@@ -24,7 +31,7 @@ export default function Pagination({ currentPage, totalPages, totalItems, pageSi
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className={`h-9 w-9 rounded-lg text-sm font-bold transition-colors ${
+            className={`h-9 w-9 shrink-0 rounded-lg text-sm font-bold transition-colors ${
               page === currentPage
                 ? "bg-[var(--color-primary)] text-white"
                 : "border border-gray-300 text-gray-700 hover:bg-gray-100"
