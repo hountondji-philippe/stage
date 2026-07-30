@@ -4,8 +4,9 @@ import { Link } from "react-router-dom";
 /**
  * Colonne de marque réutilisée sur les écrans d'authentification (connexion, inscription...).
  * - Desktop (md+) : panneau fixe à gauche (~45% de largeur), logo en haut, grand texte stylé en bas.
- * - Mobile (< md) : sert UNIQUEMENT de fond plein écran (position absolute) — pas de logo ni de
- *   texte dedans. Le logo est affiché au-dessus du formulaire à la place (voir la page qui l'utilise).
+ * - Mobile (< md) : sert de fond plein écran (position absolute) — pas de logo ni de titre dedans
+ *   (affichés au-dessus du formulaire à la place, voir la page qui l'utilise), MAIS le lien
+ *   (linkText/linkTo) reste visible, épinglé en bas du fond.
  *
  * TODO : remplacer l'icône GraduationCap par le vrai logo de la plateforme dès qu'il est fourni.
  */
@@ -20,7 +21,7 @@ export default function BrandPanel({ title, linkText, linkTo = "/connexion", bad
       <div className="absolute bottom-[-5%] left-[-5%] w-96 h-96 bg-[#fabd0d]/10 rounded-full blur-3xl" />
 
       <div className="relative z-10 hidden h-full flex-col md:flex">
-        {/* Logo — toujours épinglé en haut, desktop et mobile */}
+        {/* Logo — desktop uniquement */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <GraduationCap className="w-8 h-8 md:w-9 md:h-9 text-[#fabd0d]" strokeWidth={1.5} />
@@ -37,21 +38,25 @@ export default function BrandPanel({ title, linkText, linkTo = "/connexion", bad
 
         <div className="flex-grow" />
 
-        {/* Texte — toujours épinglé en bas, taille réduite sur mobile */}
+        {/* Texte — desktop uniquement */}
         <div className="mt-auto max-w-md">
           <h2 className="text-2xl sm:text-3xl md:text-3xl font-bold leading-tight mb-4 md:mb-6">
             {title}
           </h2>
-          <Link
-            to={linkTo}
-            className="inline-flex items-center gap-2 text-[#fabd0d] font-semibold group"
-          >
-            <span className="border-b-2 border-[#fabd0d] pb-0.5 transition-all group-hover:pb-1">
-              {linkText}
-            </span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
         </div>
+      </div>
+
+      {/* Lien — visible sur mobile ET desktop, épinglé en bas du panneau */}
+      <div className="relative z-10 mt-auto p-6 md:absolute md:bottom-12 md:left-12 md:p-0">
+        <Link
+          to={linkTo}
+          className="inline-flex items-center gap-2 text-[#fabd0d] font-semibold group"
+        >
+          <span className="border-b-2 border-[#fabd0d] pb-0.5 transition-all group-hover:pb-1">
+            {linkText}
+          </span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
     </div>
   );
