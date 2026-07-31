@@ -71,7 +71,7 @@
         <tr><td class="label">Date de dépôt :</td><td>{{ $memoire->created_at->format('d/m/Y') }}</td></tr>
     </table>
 
-    <p class="note-finale">Veuillez vous rapprocher de l'administration pour effectuer le dépôt physique.</p>
+    <p class="note-finale">Veuillez conserver soigneusement la fiche afin de pouvoir retirer votre attestation.</p>
     
     <table style="width:100%; margin-top:25px;">
     <tr>
