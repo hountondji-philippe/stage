@@ -1,6 +1,7 @@
 ﻿#!/bin/sh
 php artisan config:clear
 php artisan config:cache
+php artisan db:seed --force
 php artisan migrate --force
 
 (
