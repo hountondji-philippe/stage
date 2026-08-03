@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight,
   BookOpen,
@@ -9,12 +9,14 @@ import {
   History,
   Headset,
   ArrowRight,
+  Pencil,
 } from "lucide-react";
 import { apiClient } from "../../../lib/apiClient";
 import EtudiantLayout from "../components/EtudiantLayout";
 import StatutTimeline from "../components/StatutTimeline";
 import DocumentsJoints from "../components/DocumentsJoints";
 import OuvrirTicketModal from "../../support/components/OuvrirTicketModal";
+import Button from "../../../components/ui/Button";
 import { ROUTES } from "../../../router/paths";
 
 const STATUT_LABELS = {
@@ -44,6 +46,7 @@ function InfoItem({ icon: Icon, label, value }) {
 
 export default function DetailDepotPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [memoire, setMemoire] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,6 +79,7 @@ export default function DetailDepotPage() {
   }
 
   const statut = STATUT_LABELS[memoire.statut] || STATUT_LABELS.en_attente;
+  const estRejete = memoire.statut === "rejete";
 
   return (
     <EtudiantLayout>
@@ -93,13 +97,24 @@ export default function DetailDepotPage() {
         <h1 className="max-w-4xl break-words text-2xl font-bold text-[var(--color-primary)] md:text-3xl">
           {memoire.titre}
         </h1>
-        <span
-          className="inline-flex w-fit items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-semibold"
-          style={{ backgroundColor: statut.bg, color: statut.color, borderColor: statut.border }}
-        >
-          <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: statut.color }} />
-          {statut.label}
-        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span
+            className="inline-flex w-fit items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-semibold"
+            style={{ backgroundColor: statut.bg, color: statut.color, borderColor: statut.border }}
+          >
+            <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: statut.color }} />
+            {statut.label}
+          </span>
+          {estRejete && (
+            <Button
+              variant="primary"
+              onClick={() => navigate(ROUTES.depotEtudiantModifier(memoire.id))}
+            >
+              <Pencil size={16} className="mr-1.5" />
+              Corriger et renvoyer
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_380px]">
@@ -119,10 +134,18 @@ export default function DetailDepotPage() {
               <InfoItem icon={History} label="Dernière modification" value={formatDate(memoire.updated_at)} />
             </div>
 
-            {memoire.statut === "rejete" && memoire.motif_rejet && (
+            {estRejete && memoire.motif_rejet && (
               <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4">
                 <p className="mb-1 text-sm font-semibold text-red-700">Motif du rejet</p>
                 <p className="text-sm text-red-600">{memoire.motif_rejet}</p>
+                <Button
+                  variant="primary"
+                  className="mt-4"
+                  onClick={() => navigate(ROUTES.depotEtudiantModifier(memoire.id))}
+                >
+                  <Pencil size={16} className="mr-1.5" />
+                  Corriger et renvoyer ce dépôt
+                </Button>
               </div>
             )}
           </section>
