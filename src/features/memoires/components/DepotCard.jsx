@@ -110,20 +110,23 @@ export default function DepotCard({ depot }) {
         )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+     <div className="flex shrink-0 items-center gap-2">
         {enAttenteConfirmationBinome && estBinome ? (
           <Button variant="primary" onClick={handleAllerConfirmation}>
             Confirmer / Refuser
           </Button>
-        ) : estRejete && estProprietaire ? (
-          <Button variant="primary" onClick={handleCorriger}>
-            <Pencil size={16} className="mr-1.5" />
-            Corriger
-          </Button>
         ) : (
-          <Button variant="primary" onClick={handleVoirDetail}>
-            Consulter
-          </Button>
+          <>
+            <Button variant="outline" onClick={handleVoirDetail}>
+              Consulter
+            </Button>
+            {estRejete && estProprietaire && (
+              <Button variant="primary" onClick={handleCorriger}>
+                <Pencil size={16} className="mr-1.5" />
+                Corriger
+              </Button>
+            )}
+          </>
         )}
       </div>
     </div>
