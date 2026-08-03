@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, AlertCircle, Users } from "lucide-react";
+import { GraduationCap, AlertCircle, Users, Pencil } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import StatusBadge from "../../../components/ui/StatusBadge";
 import { useAuth } from "../../auth/hooks/useAuth";
@@ -42,9 +42,14 @@ export default function DepotCard({ depot }) {
   const estBinome = !estProprietaire && matriculeConnecte && matriculeConnecte === matricule_binome;
 
   const enAttenteConfirmationBinome = statut === "en_attente_binome";
+  const estRejete = statut === "rejete";
 
   function handleVoirDetail() {
     navigate(ROUTES.memoireDetailEtudiant(id));
+  }
+
+  function handleCorriger() {
+    navigate(ROUTES.depotEtudiantModifier(id));
   }
 
   function handleAllerConfirmation() {
@@ -88,7 +93,7 @@ export default function DepotCard({ depot }) {
           </p>
         )}
 
-        {statut === "rejete" && motif_rejet && (
+        {estRejete && motif_rejet && (
           <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-[var(--color-status-rejete)]">
             <AlertCircle size={15} />
             Motif : {motif_rejet}
@@ -109,6 +114,11 @@ export default function DepotCard({ depot }) {
         {enAttenteConfirmationBinome && estBinome ? (
           <Button variant="primary" onClick={handleAllerConfirmation}>
             Confirmer / Refuser
+          </Button>
+        ) : estRejete && estProprietaire ? (
+          <Button variant="primary" onClick={handleCorriger}>
+            <Pencil size={16} className="mr-1.5" />
+            Corriger
           </Button>
         ) : (
           <Button variant="primary" onClick={handleVoirDetail}>
