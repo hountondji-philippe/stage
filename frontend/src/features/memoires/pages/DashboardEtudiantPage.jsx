@@ -1,0 +1,96 @@
+import { Clock, CheckCircle2, XCircle, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import EtudiantLayout from "../components/EtudiantLayout";
+import StatCard from "../components/StatCard";
+import DepotCard from "../components/DepotCard";
+import EmptyState from "../components/EmptyState";
+import BandeauPeriodeDepot from "../components/BandeauPeriodeDepot";
+import Button from "../../../components/ui/Button";
+import LoadingScreen from "../../../components/ui/LoadingScreen";
+import { useMesDepots } from "../hooks/useMesDepots";
+import { usePeriodeDepot } from "../hooks/usePeriodeDepot";
+import { useAuth } from "../../auth/hooks/useAuth";
+import { ROUTES } from "../../../router/paths";
+
+export default function DashboardEtudiantPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { memoires, counts, loading, error, filtreStatut, toggleFiltre } = useMesDepots();
+  const { ouverte: periodeOuverte, loading: loadingPeriode } = usePeriodeDepot();
+  const prenom = user?.etudiant_autorise?.prenom || "";
+
+  return (
+    <EtudiantLayout>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[var(--color-primary)] sm:text-3xl">
+            Bonjour {prenom}
+          </h1>
+          <p className="mt-1 text-gray-500">Voici le statut de vos dépôts académiques.</p>
+        </div>
+        <Button
+          variant="accent"
+          disabled={!loadingPeriode && !periodeOuverte}
+          onClick={() => navigate(ROUTES.depotEtudiant)}
+        >
+          <Plus size={18} />
+          Déposer un nouveau mémoire
+        </Button>
+      </div>
+
+      <BandeauPeriodeDepot />
+
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard
+          icon={Clock}
+          count={counts.en_attente}
+          label="En attente"
+          scheme="attente"
+          active={filtreStatut === "en_attente"}
+          onClick={() => toggleFiltre("en_attente")}
+        />
+        <StatCard
+          icon={CheckCircle2}
+          count={counts.valide}
+          label="Validés"
+          scheme="valide"
+          active={filtreStatut === "valide"}
+          onClick={() => toggleFiltre("valide")}
+        />
+        <StatCard
+          icon={XCircle}
+          count={counts.rejete}
+          label="Rejetés"
+          scheme="rejete"
+          active={filtreStatut === "rejete"}
+          onClick={() => toggleFiltre("rejete")}
+        />
+      </div>
+
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-bold text-[var(--color-text)]">Dépôts récents</h2>
+        <button
+          onClick={() => navigate(ROUTES.mesDepots)}
+          className="text-sm font-semibold text-[var(--color-primary-light)] hover:underline"
+        >
+          Voir tout l'historique
+        </button>
+      </div>
+
+      <div className="relative">
+        {loading && <LoadingScreen fullScreen={false} message="Chargement de vos dépôts..." />}
+        {!loading && error && (
+          <div className="rounded-2xl bg-red-50 p-10 text-center text-red-600">{error}</div>
+        )}
+        {!loading && !error && memoires.length === 0 && <EmptyState />}
+        {!loading && !error && memoires.length > 0 && (
+          <div className="space-y-4">
+            {memoires.map((depot) => (
+              <DepotCard key={depot.id} depot={depot} />
+            ))}
+          </div>
+        )}
+      </div>
+    </EtudiantLayout>
+  );
+}
