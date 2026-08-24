@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: memoires_plus
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./stage-backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:10000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      PORT: 10000
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: memoires_plus
+      DB_USERNAME: postgres
+      DB_PASSWORD: secret
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./stage-backend/storage:/app/storage
+    command: >
+      sh -c "php artisan key:generate --force &&
+             php artisan config:cache &&
+             php artisan migrate --seed --force &&
+             php artisan serve --host 0.0.0.0 --port ${PORT:-10000}"
+
+  frontend:
+    build:
+      context: ./stage-frontend
+      dockerfile: ../frontend.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000/api
+    depends_on:
+      - backend
+    volumes:
+      - ./stage-frontend:/app
+      - /app/node_modules
+
+volumes:
+  db_data:
